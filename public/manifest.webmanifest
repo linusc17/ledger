@@ -1,0 +1,23 @@
+{
+  "name": "Ledger",
+  "short_name": "Ledger",
+  "description": "A quiet ledger for the work you do, and the money it earns.",
+  "start_url": "/today",
+  "display": "standalone",
+  "background_color": "#faf7f2",
+  "theme_color": "#faf7f2",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/icon",
+      "sizes": "32x32",
+      "type": "image/png"
+    },
+    {
+      "src": "/apple-icon",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}
