@@ -3,10 +3,20 @@
 import { useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { Doc } from "@/convex/_generated/dataModel";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import TaskCheckbox from "./task-checkbox";
 import { IconNote, IconPlus } from "./icons";
 import { cn } from "@/lib/cn";
+import { Button } from "@/components/ui/button";
+import {
+  Drawer,
+  DrawerClose,
+  DrawerContent,
+  DrawerDescription,
+  DrawerFooter,
+  DrawerHeader,
+  DrawerTitle,
+} from "@/components/ui/drawer";
 
 type Client = Doc<"clients">;
 type Log = Doc<"dailyLogs"> | undefined;
@@ -23,13 +33,20 @@ export default function ClientCard({
   index: number;
 }) {
   const toggle = useMutation(api.logs.toggleTask);
-  const setNotes = useMutation(api.logs.setNotes);
+  const setNotesMut = useMutation(api.logs.setNotes);
   const updateTasks = useMutation(api.clients.updateTasks);
-  const [notesOpen, setNotesOpen] = useState(false);
-  const [draft, setDraft] = useState(log?.notes ?? "");
-  const [addingTask, setAddingTask] = useState(false);
+
+  const [taskDrawerOpen, setTaskDrawerOpen] = useState(false);
+  const [noteDrawerOpen, setNoteDrawerOpen] = useState(false);
   const [newTaskLabel, setNewTaskLabel] = useState("");
-  const addInputRef = useRef<HTMLInputElement>(null);
+  const [draft, setDraft] = useState(log?.notes ?? "");
+  const [saving, setSaving] = useState(false);
+  const taskInputRef = useRef<HTMLInputElement>(null);
+  const noteInputRef = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    setDraft(log?.notes ?? "");
+  }, [log?.notes]);
 
   const done = log?.completedTaskIds ?? [];
   const total = client.dailyTasks.length;
@@ -40,109 +57,146 @@ export default function ClientCard({
     await toggle({ clientId: client._id, logDate, taskId });
   }
 
+  async function addTask() {
+    if (!newTaskLabel.trim()) return;
+    setSaving(true);
+    const id =
+      newTaskLabel.toLowerCase().replace(/[^a-z0-9]+/g, "-").slice(0, 20) ||
+      `task-${Date.now()}`;
+    await updateTasks({
+      clientId: client._id,
+      dailyTasks: [...client.dailyTasks, { id, label: newTaskLabel.trim() }],
+    });
+    setNewTaskLabel("");
+    setSaving(false);
+    setTaskDrawerOpen(false);
+  }
+
   async function saveNotes() {
-    if ((log?.notes ?? "") === draft) return;
-    await setNotes({ clientId: client._id, logDate, notes: draft });
+    if ((log?.notes ?? "") === draft) {
+      setNoteDrawerOpen(false);
+      return;
+    }
+    setSaving(true);
+    await setNotesMut({ clientId: client._id, logDate, notes: draft });
+    setSaving(false);
+    setNoteDrawerOpen(false);
   }
 
   return (
-    <article
-      className={cn("fade-in bg-bg-2 rounded-xl p-5", `fade-in-${Math.min(index + 1, 4)}`)}
-    >
-      <header className="flex items-center justify-between mb-3">
-        <h2 className={cn("text-lg font-semibold", allDone && "text-ink-soft")}>
-          {client.name}
-        </h2>
-        <span className={cn(
-          "font-mono text-xs tabular-nums",
-          allDone ? "text-success" : "text-muted",
-        )}>
-          {count}/{total}
-        </span>
-      </header>
+    <>
+      <article
+        className={cn("fade-in bg-bg-2 rounded-xl p-5", `fade-in-${Math.min(index + 1, 4)}`)}
+      >
+        <header className="flex items-center justify-between mb-3">
+          <h2 className={cn("text-lg font-semibold", allDone && "text-ink-soft")}>
+            {client.name}
+          </h2>
+          <span className={cn(
+            "font-mono text-xs tabular-nums",
+            allDone ? "text-success" : "text-muted",
+          )}>
+            {count}/{total}
+          </span>
+        </header>
 
-      {total > 0 ? (
-        <ul className="space-y-0.5">
-          {client.dailyTasks.map((task) => (
-            <li key={task.id}>
-              <TaskCheckbox
-                checked={done.includes(task.id)}
-                label={task.label}
-                onToggle={() => onToggle(task.id)}
-              />
-            </li>
-          ))}
-        </ul>
-      ) : !addingTask ? (
-        <button
-          type="button"
-          onClick={() => {
-            setAddingTask(true);
-            setTimeout(() => addInputRef.current?.focus(), 50);
-          }}
-          className="flex items-center gap-2 text-sm text-muted hover:text-ink transition-colors py-2"
-        >
-          <IconPlus width={14} height={14} strokeWidth={1.5} />
-          Add a task
-        </button>
-      ) : null}
+        {total > 0 && (
+          <ul className="space-y-0.5">
+            {client.dailyTasks.map((task) => (
+              <li key={task.id}>
+                <TaskCheckbox
+                  checked={done.includes(task.id)}
+                  label={task.label}
+                  onToggle={() => onToggle(task.id)}
+                />
+              </li>
+            ))}
+          </ul>
+        )}
 
-      {addingTask && (
-        <div className="flex items-center gap-2 drawer-enter py-1">
-          <input
-            ref={addInputRef}
-            value={newTaskLabel}
-            onChange={(e) => setNewTaskLabel(e.target.value)}
-            onKeyDown={async (e) => {
-              if (e.key === "Enter" && newTaskLabel.trim()) {
-                const id = newTaskLabel.toLowerCase().replace(/[^a-z0-9]+/g, "-").slice(0, 20) || `task-${Date.now()}`;
-                await updateTasks({
-                  clientId: client._id,
-                  dailyTasks: [...client.dailyTasks, { id, label: newTaskLabel.trim() }],
-                });
-                setNewTaskLabel("");
-              }
-              if (e.key === "Escape") {
-                setAddingTask(false);
-                setNewTaskLabel("");
-              }
-            }}
-            placeholder="Task name"
-            className="flex-1 min-w-0 bg-transparent border border-border rounded-lg px-3 py-2 text-sm placeholder:text-muted outline-none focus:border-foreground/30 focus-visible:!outline-none"
-          />
+        <div className={cn("flex items-center gap-3", total > 0 && "mt-3 pt-2 border-t border-border/50")}>
           <button
             type="button"
-            onClick={() => { setAddingTask(false); setNewTaskLabel(""); }}
-            className="text-xs text-muted hover:text-ink transition-colors"
+            onClick={() => {
+              setTaskDrawerOpen(true);
+              setTimeout(() => taskInputRef.current?.focus(), 200);
+            }}
+            className="flex items-center gap-1.5 text-xs text-muted hover:text-ink transition-colors"
           >
-            Cancel
+            <IconPlus width={12} height={12} strokeWidth={1.5} />
+            Add task
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setNoteDrawerOpen(true);
+              setTimeout(() => noteInputRef.current?.focus(), 200);
+            }}
+            className="flex items-center gap-1.5 text-xs text-muted hover:text-ink transition-colors"
+          >
+            <IconNote width={12} height={12} strokeWidth={1.3} />
+            {log?.notes ? "Edit note" : "Note"}
           </button>
         </div>
-      )}
+      </article>
 
-      <div className="mt-3 pt-2 border-t border-border/50">
-        <button
-          type="button"
-          onClick={() => setNotesOpen((v) => !v)}
-          className="flex items-center gap-1.5 text-xs text-muted hover:text-ink transition-colors"
-        >
-          <IconNote width={12} height={12} strokeWidth={1.3} />
-          {log?.notes ? "Edit note" : "Add note"}
-        </button>
-
-        {notesOpen && (
-          <div className="drawer-enter mt-2">
-            <textarea
-              value={draft}
-              onChange={(e) => setDraft(e.target.value)}
-              onBlur={saveNotes}
-              placeholder="Quick note for the day…"
-              rows={2}
-              className="w-full bg-transparent text-sm text-ink-soft border border-border rounded-lg px-3 py-2 focus:border-foreground/30 outline-none placeholder:text-muted resize-none focus-visible:!outline-none"
-            />
+      <Drawer open={taskDrawerOpen} onOpenChange={setTaskDrawerOpen}>
+        <DrawerContent>
+          <div className="mx-auto w-full max-w-sm">
+            <DrawerHeader>
+              <DrawerTitle>Add task — {client.name}</DrawerTitle>
+              <DrawerDescription>This task will appear in your daily checklist.</DrawerDescription>
+            </DrawerHeader>
+            <div className="px-4 pb-2">
+              <input
+                ref={taskInputRef}
+                value={newTaskLabel}
+                onChange={(e) => setNewTaskLabel(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && addTask()}
+                placeholder="e.g. Submit daily report"
+                className="w-full bg-secondary border border-input rounded-lg px-4 py-3 text-base placeholder:text-muted-foreground outline-none focus:border-foreground/30 focus-visible:!outline-none"
+              />
+            </div>
+            <DrawerFooter>
+              <Button onClick={addTask} disabled={!newTaskLabel.trim() || saving} size="lg">
+                {saving ? "Adding…" : "Add task"}
+              </Button>
+              <DrawerClose asChild>
+                <Button variant="outline" size="lg">Cancel</Button>
+              </DrawerClose>
+            </DrawerFooter>
           </div>
-        )}
-      </div>
-    </article>
+        </DrawerContent>
+      </Drawer>
+
+      <Drawer open={noteDrawerOpen} onOpenChange={setNoteDrawerOpen}>
+        <DrawerContent>
+          <div className="mx-auto w-full max-w-sm">
+            <DrawerHeader>
+              <DrawerTitle>Note — {client.name}</DrawerTitle>
+              <DrawerDescription>A quick note for today.</DrawerDescription>
+            </DrawerHeader>
+            <div className="px-4 pb-2">
+              <textarea
+                ref={noteInputRef}
+                value={draft}
+                onChange={(e) => setDraft(e.target.value)}
+                placeholder="What's on your mind…"
+                rows={4}
+                className="w-full bg-secondary border border-input rounded-lg px-4 py-3 text-base placeholder:text-muted-foreground outline-none focus:border-foreground/30 resize-none focus-visible:!outline-none"
+              />
+            </div>
+            <DrawerFooter>
+              <Button onClick={saveNotes} disabled={saving} size="lg">
+                {saving ? "Saving…" : "Save note"}
+              </Button>
+              <DrawerClose asChild>
+                <Button variant="outline" size="lg">Cancel</Button>
+              </DrawerClose>
+            </DrawerFooter>
+          </div>
+        </DrawerContent>
+      </Drawer>
+    </>
   );
 }
