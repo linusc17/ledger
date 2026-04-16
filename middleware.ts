@@ -12,6 +12,7 @@ const isSignedInRoute = createRouteMatcher([
   "/salary",
   "/history",
   "/settings",
+  "/onboarding",
 ]);
 
 const passthrough = (_request: NextRequest) => NextResponse.next();
