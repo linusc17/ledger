@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { IconPlus, IconX, IconArrow } from "@/components/icons";
 import DayPicker from "@/components/day-picker";
 
-type Step = "welcome" | "name" | "tasks" | "pay";
+type Step = "welcome" | "name" | "tasks" | "pay" | "install";
 
 export default function OnboardingPage() {
   const [step, setStep] = useState<Step>("welcome");
@@ -30,7 +30,7 @@ export default function OnboardingPage() {
     setStep(next);
   }
 
-  async function finish() {
+  async function saveAndContinue() {
     setSaving(true);
     await createClient({
       name: clientName.trim(),
@@ -40,10 +40,15 @@ export default function OnboardingPage() {
     });
     await generatePay();
     await completeOnboarding();
+    setSaving(false);
+    go("install");
+  }
+
+  function finish() {
     router.replace("/today");
   }
 
-  const steps: Step[] = ["welcome", "name", "tasks", "pay"];
+  const steps: Step[] = ["welcome", "name", "tasks", "pay", "install"];
   const currentIndex = steps.indexOf(step);
   const totalSteps = steps.length - 1;
 
@@ -106,13 +111,94 @@ export default function OnboardingPage() {
               setPayDays={setPayDays}
               amount={amount}
               setAmount={setAmount}
-              onFinish={finish}
+              onFinish={saveAndContinue}
               saving={saving}
             />
           </div>
         )}
+        {step === "install" && (
+          <div key="install" className={slideClass}>
+            <InstallStep onFinish={finish} />
+          </div>
+        )}
       </div>
     </main>
+  );
+}
+
+function InstallStep({ onFinish }: { onFinish: () => void }) {
+  return (
+    <div className="text-center">
+      <div className="w-14 h-14 rounded-2xl bg-foreground text-background flex items-center justify-center mx-auto mb-5">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+          <rect x="5" y="2" width="14" height="20" rx="2" ry="2" />
+          <path d="M12 18h.01" />
+        </svg>
+      </div>
+      <h1 className="text-[26px] font-semibold tracking-tight leading-tight mb-2">
+        Install on your iPhone
+      </h1>
+      <p className="text-muted-foreground text-[15px] max-w-[300px] mx-auto leading-relaxed mb-8">
+        Add Ledger to your home screen for a native app feel.
+      </p>
+
+      <ol className="text-left space-y-4 mb-10 max-w-[320px] mx-auto">
+        <InstallStepItem
+          num="1"
+          title="Open in Safari"
+          body="Make sure you're using Safari, not another browser."
+        />
+        <InstallStepItem
+          num="2"
+          title="Tap the Share button"
+          body={
+            <span className="inline-flex items-center gap-1.5">
+              Tap
+              <span className="inline-flex items-center justify-center w-6 h-6 rounded bg-secondary border border-border">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" />
+                  <polyline points="16 6 12 2 8 6" />
+                  <line x1="12" y1="2" x2="12" y2="15" />
+                </svg>
+              </span>
+              at the bottom of Safari.
+            </span>
+          }
+        />
+        <InstallStepItem
+          num="3"
+          title="Add to Home Screen"
+          body='Scroll down and tap "Add to Home Screen", then "Add".'
+        />
+      </ol>
+
+      <Button size="lg" onClick={onFinish} className="w-full">
+        Got it, take me in
+        <IconArrow width={16} height={16} className="ml-1" strokeWidth={1.5} />
+      </Button>
+    </div>
+  );
+}
+
+function InstallStepItem({
+  num,
+  title,
+  body,
+}: {
+  num: string;
+  title: string;
+  body: React.ReactNode;
+}) {
+  return (
+    <li className="grid grid-cols-[auto_1fr] gap-3 items-start">
+      <span className="w-6 h-6 rounded-full bg-secondary text-foreground text-xs font-medium tabular-nums flex items-center justify-center shrink-0 mt-0.5">
+        {num}
+      </span>
+      <div>
+        <p className="text-sm font-medium mb-0.5">{title}</p>
+        <p className="text-sm text-muted-foreground leading-relaxed">{body}</p>
+      </div>
+    </li>
   );
 }
 

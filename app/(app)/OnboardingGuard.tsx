@@ -25,6 +25,10 @@ export default function OnboardingGuard() {
       return;
     }
 
+    if (pathname === "/onboarding") {
+      return;
+    }
+
     void generatePay();
   }, [isAuthenticated, isLoading, profile, generatePay, router, pathname]);
 
