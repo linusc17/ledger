@@ -3,7 +3,7 @@
 import { useMutation, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { Doc } from "@/convex/_generated/dataModel";
-import { useMemo, useState, useRef } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import { cn } from "@/lib/cn";
 import { IconCheck, IconArrow } from "@/components/icons";
 import { todayLocal, formatShort, ordinal } from "@/lib/date";
@@ -112,12 +112,14 @@ function ReceiveDrawer({
     if (!open) onClose();
   }
 
-  function reset() {
+  useEffect(() => {
+    if (!isOpen) return;
     const prefill = period?.amount ?? defaultAmount;
     setAmtVal(prefill ? prefill.toString() : "");
     setSaving(false);
-    setTimeout(() => inputRef.current?.focus(), 100);
-  }
+    const t = setTimeout(() => inputRef.current?.focus(), 100);
+    return () => clearTimeout(t);
+  }, [isOpen, period?._id, period?.amount, defaultAmount]);
 
   async function submit() {
     const n = parseFloat(amtVal);
@@ -128,7 +130,7 @@ function ReceiveDrawer({
   }
 
   return (
-    <Drawer open={isOpen} onOpenChange={handleOpenChange} onAnimationEnd={() => isOpen && reset()}>
+    <Drawer open={isOpen} onOpenChange={handleOpenChange}>
       <DrawerContent>
         <div className="mx-auto w-full max-w-sm">
           <DrawerHeader>

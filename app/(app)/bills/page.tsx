@@ -371,12 +371,14 @@ function PayDrawer({
     if (!open) onClose();
   }
 
-  function reset() {
+  useEffect(() => {
+    if (!isOpen) return;
     const prefill = period?.amount ?? template?.amount;
     setAmtVal(prefill ? prefill.toString() : "");
     setSaving(false);
-    setTimeout(() => inputRef.current?.focus(), 100);
-  }
+    const t = setTimeout(() => inputRef.current?.focus(), 100);
+    return () => clearTimeout(t);
+  }, [isOpen, period?._id, template?._id, period?.amount, template?.amount]);
 
   async function submit() {
     const n = parseFloat(amtVal);
@@ -387,7 +389,7 @@ function PayDrawer({
   }
 
   return (
-    <Drawer open={isOpen} onOpenChange={handleOpenChange} onAnimationEnd={() => isOpen && reset()}>
+    <Drawer open={isOpen} onOpenChange={handleOpenChange}>
       <DrawerContent>
         <div className="mx-auto w-full max-w-sm">
           <DrawerHeader>
@@ -461,7 +463,8 @@ function TemplateDrawer({
     if (!open) onClose();
   }
 
-  function reset() {
+  useEffect(() => {
+    if (!isOpen) return;
     if (state.mode === "edit") {
       setName(state.template.name);
       setAmount(state.template.amount.toString());
@@ -474,7 +477,7 @@ function TemplateDrawer({
       setVariableAmount(false);
     }
     setSaving(false);
-  }
+  }, [isOpen, state]);
 
   const dayNum = parseInt(dueDay, 10);
   const amtNum = parseFloat(amount);
@@ -504,7 +507,7 @@ function TemplateDrawer({
   }
 
   return (
-    <Drawer open={isOpen} onOpenChange={handleOpenChange} onAnimationEnd={() => isOpen && reset()}>
+    <Drawer open={isOpen} onOpenChange={handleOpenChange}>
       <DrawerContent>
         <div className="mx-auto w-full max-w-sm">
           <DrawerHeader>
