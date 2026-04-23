@@ -1,4 +1,4 @@
-import { NextResponse, type NextRequest } from "next/server";
+import { NextResponse } from "next/server";
 import {
   convexAuthNextjsMiddleware,
   createRouteMatcher,
@@ -10,12 +10,13 @@ const isSignedInRoute = createRouteMatcher([
   "/",
   "/today",
   "/salary",
+  "/bills",
   "/history",
   "/settings",
   "/onboarding",
 ]);
 
-const passthrough = (_request: NextRequest) => NextResponse.next();
+const passthrough = () => NextResponse.next();
 
 const authed = convexAuthNextjsMiddleware(async (request, { convexAuth }) => {
   const ok = await convexAuth.isAuthenticated();

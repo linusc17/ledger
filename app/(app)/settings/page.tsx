@@ -11,6 +11,7 @@ import DayPicker from "@/components/day-picker";
 import { cn } from "@/lib/cn";
 import { SkeletonList } from "@/components/skeleton";
 import { useRouter } from "next/navigation";
+import { ordinal } from "@/lib/date";
 
 type Client = Doc<"clients">;
 
@@ -88,12 +89,6 @@ export default function SettingsPage() {
       </section>
     </main>
   );
-}
-
-function ordinal(n: number): string {
-  const s = ["th", "st", "nd", "rd"];
-  const v = n % 100;
-  return n + (s[(v - 20) % 10] || s[v] || s[0]);
 }
 
 function ClientEditor({ client, index }: { client: Client; index: number }) {

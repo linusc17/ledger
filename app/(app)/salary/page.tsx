@@ -6,7 +6,8 @@ import { Doc } from "@/convex/_generated/dataModel";
 import { useMemo, useState, useRef } from "react";
 import { cn } from "@/lib/cn";
 import { IconCheck, IconArrow } from "@/components/icons";
-import { todayLocal, formatShort } from "@/lib/date";
+import { todayLocal, formatShort, ordinal } from "@/lib/date";
+import { peso } from "@/lib/currency";
 import { SkeletonList } from "@/components/skeleton";
 import { Button } from "@/components/ui/button";
 import {
@@ -18,11 +19,6 @@ import {
   DrawerHeader,
   DrawerTitle,
 } from "@/components/ui/drawer";
-
-function peso(n: number | undefined): string {
-  if (!n) return "—";
-  return `₱${n.toLocaleString()}`;
-}
 
 export default function SalaryPage() {
   const clients = useQuery(api.clients.listMine);
@@ -352,8 +348,3 @@ function PastRow({
   );
 }
 
-function ordinal(n: number): string {
-  const s = ["th", "st", "nd", "rd"];
-  const v = n % 100;
-  return n + (s[(v - 20) % 10] || s[v] || s[0]);
-}

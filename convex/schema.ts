@@ -45,4 +45,24 @@ export default defineSchema({
   })
     .index("by_user", ["userId"])
     .index("by_client_date", ["clientId", "payDate"]),
+
+  billTemplates: defineTable({
+    userId: v.id("users"),
+    name: v.string(),
+    amount: v.number(),
+    dueDay: v.number(),
+    variableAmount: v.boolean(),
+    sortOrder: v.number(),
+  }).index("by_user", ["userId"]),
+
+  billPeriods: defineTable({
+    userId: v.id("users"),
+    templateId: v.id("billTemplates"),
+    dueDate: v.string(),
+    amount: v.optional(v.number()),
+    paid: v.boolean(),
+    paidDate: v.optional(v.string()),
+  })
+    .index("by_user", ["userId"])
+    .index("by_template_date", ["templateId", "dueDate"]),
 });
