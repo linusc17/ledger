@@ -1,6 +1,7 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { getAuthUserId } from "@convex-dev/auth/server";
+import { reconcileClientPeriods } from "./pay";
 
 export const listMine = query({
   args: {},
@@ -53,6 +54,8 @@ export const updatePay = mutation({
     const client = await ctx.db.get(clientId);
     if (!client || client.userId !== userId) throw new Error("not found");
     await ctx.db.patch(clientId, { payDays, defaultAmount });
+    const updated = await ctx.db.get(clientId);
+    if (updated) await reconcileClientPeriods(ctx, updated);
   },
 });
 

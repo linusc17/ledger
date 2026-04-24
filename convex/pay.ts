@@ -1,11 +1,67 @@
 import { v } from "convex/values";
-import { mutation, query } from "./_generated/server";
+import { mutation, query, MutationCtx } from "./_generated/server";
+import { Doc } from "./_generated/dataModel";
 import { getAuthUserId } from "@convex-dev/auth/server";
 
 function toIso(y: number, m: number, d: number): string {
   const last = new Date(y, m + 1, 0).getDate();
   const clamped = Math.min(d, last);
   return `${y}-${String(m + 1).padStart(2, "0")}-${String(clamped).padStart(2, "0")}`;
+}
+
+function todayIso(): string {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+export async function reconcileClientPeriods(
+  ctx: MutationCtx,
+  client: Doc<"clients">,
+): Promise<number> {
+  if (!client.payDays || client.payDays.length === 0) return 0;
+
+  const now = new Date();
+  const today = todayIso();
+
+  const validDates = new Set<string>();
+  for (let offset = 0; offset <= 1; offset++) {
+    let y = now.getFullYear();
+    let m = now.getMonth() + offset;
+    if (m > 11) { y++; m -= 12; }
+    for (const day of client.payDays) {
+      validDates.add(toIso(y, m, day));
+    }
+  }
+
+  const existing = await ctx.db
+    .query("payPeriods")
+    .withIndex("by_client_date", (q) => q.eq("clientId", client._id))
+    .collect();
+
+  const keptDates = new Set<string>();
+  for (const p of existing) {
+    const stale = !p.received && p.payDate >= today && !validDates.has(p.payDate);
+    if (stale) {
+      await ctx.db.delete(p._id);
+    } else {
+      keptDates.add(p.payDate);
+    }
+  }
+
+  let created = 0;
+  for (const payDate of validDates) {
+    if (keptDates.has(payDate)) continue;
+    await ctx.db.insert("payPeriods", {
+      userId: client.userId,
+      clientId: client._id,
+      payDate,
+      amount: client.defaultAmount,
+      received: false,
+    });
+    created++;
+  }
+
+  return created;
 }
 
 export const listMine = query({
@@ -30,39 +86,9 @@ export const generateMissing = mutation({
       .query("clients")
       .withIndex("by_user", (q) => q.eq("userId", userId))
       .collect();
-    const now = new Date();
-    const currentYear = now.getFullYear();
-    const currentMonth = now.getMonth();
     let created = 0;
-
     for (const client of clients) {
-      if (!client.payDays || client.payDays.length === 0) continue;
-
-      const existing = await ctx.db
-        .query("payPeriods")
-        .withIndex("by_client_date", (q) => q.eq("clientId", client._id))
-        .collect();
-      const seen = new Set(existing.map((p) => p.payDate));
-
-      for (let offset = 0; offset <= 1; offset++) {
-        let y = currentYear;
-        let m = currentMonth + offset;
-        if (m < 0) { y--; m = 11; }
-        if (m > 11) { y++; m = 0; }
-
-        for (const day of client.payDays) {
-          const payDate = toIso(y, m, day);
-          if (seen.has(payDate)) continue;
-          await ctx.db.insert("payPeriods", {
-            userId,
-            clientId: client._id,
-            payDate,
-            amount: client.defaultAmount,
-            received: false,
-          });
-          created++;
-        }
-      }
+      created += await reconcileClientPeriods(ctx, client);
     }
     return { created };
   },
