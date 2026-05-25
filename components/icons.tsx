@@ -44,8 +44,15 @@ export function IconHistory(props: SVGProps<SVGSVGElement>) {
 export function IconSettings(props: SVGProps<SVGSVGElement>) {
   return (
     <svg {...base} {...props}>
-      <circle cx="12" cy="12" r="2.5" />
-      <path d="M12 3v2M12 19v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M3 12h2M19 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" />
+      <line x1="4" y1="7" x2="9" y2="7" />
+      <line x1="13" y1="7" x2="20" y2="7" />
+      <circle cx="11" cy="7" r="2" />
+      <line x1="4" y1="12" x2="14" y2="12" />
+      <line x1="18" y1="12" x2="20" y2="12" />
+      <circle cx="16" cy="12" r="2" />
+      <line x1="4" y1="17" x2="6" y2="17" />
+      <line x1="10" y1="17" x2="20" y2="17" />
+      <circle cx="8" cy="17" r="2" />
     </svg>
   );
 }

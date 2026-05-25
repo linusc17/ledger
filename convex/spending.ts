@@ -4,19 +4,19 @@ import { Id } from "./_generated/dataModel";
 import { getAuthUserId } from "@convex-dev/auth/server";
 
 const COLOR_PALETTE = [
-  "#6a9a6a",
-  "#c7542a",
   "#d4a02d",
+  "#c7542a",
   "#3e6b9a",
   "#8a5fa5",
-  "#3e9a8e",
   "#b54a6e",
+  "#3e9a8e",
+  "#a0631f",
   "#8a7f75",
 ];
 
 const DEFAULT_CATEGORIES: { name: string; color: string }[] = [
   { name: "Food", color: COLOR_PALETTE[0] },
-  { name: "Transportation", color: COLOR_PALETTE[3] },
+  { name: "Transportation", color: COLOR_PALETTE[2] },
   { name: "Other", color: COLOR_PALETTE[7] },
 ];
 

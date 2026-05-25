@@ -8,6 +8,7 @@ export default defineSchema({
   userProfiles: defineTable({
     userId: v.id("users"),
     onboardingComplete: v.boolean(),
+    hiddenTabs: v.optional(v.array(v.string())),
   }).index("by_user", ["userId"]),
 
   clients: defineTable({

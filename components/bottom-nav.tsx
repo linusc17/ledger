@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useQuery } from "convex/react";
+import { api } from "@/convex/_generated/api";
 import { IconToday, IconSalary, IconBills, IconSpending, IconSettings } from "./icons";
 import { cn } from "@/lib/cn";
 
@@ -13,15 +15,21 @@ const tabs = [
   { href: "/settings", label: "Settings", Icon: IconSettings },
 ];
 
+export const HIDEABLE_TABS = ["/today", "/salary", "/bills", "/spending"] as const;
+
 export default function BottomNav() {
   const pathname = usePathname();
+  const profile = useQuery(api.profile.get);
 
   if (pathname.startsWith("/onboarding")) return null;
+
+  const hidden = new Set(profile?.hiddenTabs ?? []);
+  const visibleTabs = tabs.filter((t) => !hidden.has(t.href));
 
   return (
     <nav className="fixed bottom-0 inset-x-0 z-40 border-t border-border bg-bg/90 backdrop-blur-lg">
       <ul className="mx-auto max-w-xl flex items-stretch">
-        {tabs.map(({ href, label, Icon }) => {
+        {visibleTabs.map(({ href, label, Icon }) => {
           const active = pathname.startsWith(href);
           return (
             <li key={href} className="flex-1">

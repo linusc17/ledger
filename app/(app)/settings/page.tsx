@@ -16,12 +16,23 @@ import { ordinal } from "@/lib/date";
 
 type Client = Doc<"clients">;
 
+const TAB_OPTIONS: { href: string; label: string }[] = [
+  { href: "/today", label: "Today" },
+  { href: "/salary", label: "Salary" },
+  { href: "/bills", label: "Bills" },
+  { href: "/spending", label: "Spending" },
+];
+
 export default function SettingsPage() {
   const clients = useQuery(api.clients.listMine);
+  const profile = useQuery(api.profile.get);
   const createClient = useMutation(api.clients.create);
+  const setHiddenTabs = useMutation(api.profile.setHiddenTabs);
   const { signOut } = useAuthActions();
   const router = useRouter();
   const [newName, setNewName] = useState("");
+
+  const hidden = new Set(profile?.hiddenTabs ?? []);
 
   async function handleSignOut() {
     await signOut();
@@ -35,6 +46,18 @@ export default function SettingsPage() {
       dailyTasks: [{ id: "task", label: "Do today's task" }],
     });
     setNewName("");
+  }
+
+  async function toggleTab(href: string) {
+    const next = new Set(hidden);
+    if (next.has(href)) {
+      next.delete(href);
+    } else {
+      const willHideCount = next.size + 1;
+      if (willHideCount >= TAB_OPTIONS.length) return;
+      next.add(href);
+    }
+    await setHiddenTabs({ hiddenTabs: [...next] });
   }
 
   return (
@@ -88,6 +111,46 @@ export default function SettingsPage() {
           </span>
           <IconArrow width={14} height={14} strokeWidth={1.4} className="text-muted" />
         </Link>
+      </section>
+
+      <section className="mt-8 bg-bg-2 rounded-xl p-5">
+        <h3 className="text-sm font-medium text-muted mb-1">Visible tabs</h3>
+        <p className="text-xs text-muted-foreground mb-3">
+          Hide trackers you don&rsquo;t use. Settings is always visible.
+        </p>
+        <ul className="space-y-1">
+          {TAB_OPTIONS.map((t) => {
+            const isVisible = !hidden.has(t.href);
+            const isOnlyVisible = isVisible && hidden.size === TAB_OPTIONS.length - 1;
+            return (
+              <li key={t.href}>
+                <button
+                  type="button"
+                  onClick={() => toggleTab(t.href)}
+                  disabled={isOnlyVisible}
+                  className="w-full flex items-center justify-between py-2 hover:opacity-80 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <span className="text-base">{t.label}</span>
+                  <span
+                    role="switch"
+                    aria-checked={isVisible}
+                    className={cn(
+                      "relative w-9 h-5 rounded-full transition-colors",
+                      isVisible ? "bg-foreground" : "bg-border",
+                    )}
+                  >
+                    <span
+                      className={cn(
+                        "absolute top-0.5 size-4 rounded-full bg-background transition-all",
+                        isVisible ? "left-[18px]" : "left-0.5",
+                      )}
+                    />
+                  </span>
+                </button>
+              </li>
+            );
+          })}
+        </ul>
       </section>
 
       <section className="mt-12 mb-8 border-t border-border pt-8">

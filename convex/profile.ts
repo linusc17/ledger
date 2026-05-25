@@ -1,3 +1,4 @@
+import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { getAuthUserId } from "@convex-dev/auth/server";
 
@@ -26,6 +27,27 @@ export const completeOnboarding = mutation({
       await ctx.db.patch(existing._id, { onboardingComplete: true });
     } else {
       await ctx.db.insert("userProfiles", { userId, onboardingComplete: true });
+    }
+  },
+});
+
+export const setHiddenTabs = mutation({
+  args: { hiddenTabs: v.array(v.string()) },
+  handler: async (ctx, { hiddenTabs }) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new Error("not authenticated");
+    const existing = await ctx.db
+      .query("userProfiles")
+      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .first();
+    if (existing) {
+      await ctx.db.patch(existing._id, { hiddenTabs });
+    } else {
+      await ctx.db.insert("userProfiles", {
+        userId,
+        onboardingComplete: false,
+        hiddenTabs,
+      });
     }
   },
 });
