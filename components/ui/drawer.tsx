@@ -8,7 +8,10 @@ import { cn } from "@/lib/utils"
 function Drawer({
   ...props
 }: React.ComponentProps<typeof DrawerPrimitive.Root>) {
-  return <DrawerPrimitive.Root data-slot="drawer" {...props} />
+  // `fixed` keeps the drawer's top anchored when the mobile keyboard opens:
+  // Vaul shrinks the drawer height by the keyboard height instead of pushing
+  // the whole drawer upward (which would slide the title above the viewport).
+  return <DrawerPrimitive.Root data-slot="drawer" fixed {...props} />
 }
 
 function DrawerTrigger({

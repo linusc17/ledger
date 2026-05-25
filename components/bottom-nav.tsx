@@ -27,7 +27,7 @@ export default function BottomNav() {
   const visibleTabs = tabs.filter((t) => !hidden.has(t.href));
 
   return (
-    <nav className="fixed bottom-0 inset-x-0 z-40 border-t border-border bg-bg/90 backdrop-blur-lg">
+    <nav className="shrink-0 border-t border-border bg-bg/90 backdrop-blur-lg">
       <ul className="mx-auto max-w-xl flex items-stretch">
         {visibleTabs.map(({ href, label, Icon }) => {
           const active = pathname.startsWith(href);
