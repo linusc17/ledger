@@ -1,16 +1,18 @@
-# Ledger
+# Tally
 
-Track daily work and salary across your clients. Installable as a PWA on iPhone and Mac.
+A personal tracker for daily work, salary, bills, and spending. Installable as a PWA on iPhone, Android, and Mac.
 
 ## Features
 
 - **Daily task tracker** — per-client checklist you tap through each day
 - **Salary tracker** — log payments as they come in, see what's outstanding and overdue
 - **Pay day calendar** — tap the days of the month you get paid per client
+- **Monthly bills** — recurring bill templates, paid/overdue status
+- **Spending tracker** — ad-hoc expenses with custom categories, per-month donut and "saved" math
 - **Completion history** — monthly heatmap showing your work streaks
 - **Multi-client** — manage as many clients as you need with independent schedules
-- **Onboarding wizard** — guided first-time setup for your first client
-- **Installable PWA** — add to home screen on iPhone, install on Mac
+- **Onboarding wizard** — guided first-time setup with platform-specific install instructions
+- **Installable PWA** — add to home screen on iPhone or Android, install on Mac
 - **Real-time sync** — updates across devices instantly via Convex
 - **Philippine Peso** — amounts displayed in ₱
 

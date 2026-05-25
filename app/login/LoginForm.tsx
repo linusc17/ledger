@@ -33,7 +33,7 @@ export default function LoginForm() {
   return (
     <main className="min-h-svh flex flex-col justify-between px-6 py-10 sm:px-12 sm:py-16">
       <header className="flex items-baseline justify-between">
-        <span className="text-lg font-semibold tracking-tight">Ledger</span>
+        <span className="text-lg font-semibold tracking-tight">Tally</span>
         <span className="font-mono text-[11px] uppercase tracking-wider text-muted">
           {mode === "signIn" ? "Sign in" : "New account"}
         </span>
@@ -41,10 +41,10 @@ export default function LoginForm() {
 
       <section className="mx-auto w-full max-w-sm flex-1 flex flex-col justify-center py-16">
         <h1 className="text-3xl sm:text-4xl font-semibold tracking-tight leading-tight mb-2">
-          {mode === "signIn" ? "Welcome back." : "Create your ledger."}
+          {mode === "signIn" ? "Welcome back." : "Create your account."}
         </h1>
         <p className="text-ink-soft mb-10 text-[15px] leading-relaxed">
-          Track daily work and pay across your clients.
+          Daily work, salary, bills, and spending — tracked together.
         </p>
 
         <form onSubmit={onSubmit} className="space-y-5">

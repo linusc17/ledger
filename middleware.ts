@@ -11,6 +11,7 @@ const isSignedInRoute = createRouteMatcher([
   "/today",
   "/salary",
   "/bills",
+  "/spending",
   "/history",
   "/settings",
   "/onboarding",

@@ -17,14 +17,14 @@ const mono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Ledger",
-  description: "Track your daily work and pay across clients.",
+  title: "Tally",
+  description: "Daily work, salary, bills, and spending — tracked together.",
   manifest: "/manifest.webmanifest",
-  applicationName: "Ledger",
+  applicationName: "Tally",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "Ledger",
+    title: "Tally",
   },
   icons: {
     icon: "/icon",

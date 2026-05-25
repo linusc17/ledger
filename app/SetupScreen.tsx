@@ -2,7 +2,7 @@ export default function SetupScreen() {
   return (
     <main className="min-h-svh flex flex-col justify-between px-6 py-10 sm:px-12 sm:py-16">
       <header className="flex items-baseline justify-between">
-        <span className="text-lg font-semibold tracking-tight">Ledger</span>
+        <span className="text-lg font-semibold tracking-tight">Tally</span>
         <span className="font-mono text-[11px] uppercase tracking-wider text-muted">
           Setup required
         </span>
@@ -16,7 +16,7 @@ export default function SetupScreen() {
           Connect Convex to begin.
         </h1>
         <p className="text-ink-soft max-w-md mb-10 text-[15px] leading-relaxed">
-          Ledger stores your data in Convex — a free personal cloud database.
+          Tally stores your data in Convex — a free personal cloud database.
           Run the commands below in this directory.
         </p>
 

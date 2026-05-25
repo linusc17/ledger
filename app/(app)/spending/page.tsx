@@ -27,10 +27,17 @@ function shiftMonth(monthIso: string, delta: number): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
 }
 
+const PAGE_SIZE = 5;
+
 export default function SpendingPage() {
   const [month, setMonth] = useState<string>(monthOf(todayLocal()));
   const [editor, setEditor] = useState<SpendEditorState>({ mode: "closed" });
   const [manageOpen, setManageOpen] = useState(false);
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+
+  useEffect(() => {
+    setVisibleCount(PAGE_SIZE);
+  }, [month]);
 
   const categories = useQuery(api.spending.listCategories);
   const entries = useQuery(api.spending.listMonth, { month });
@@ -59,15 +66,21 @@ export default function SpendingPage() {
   const currentMonth = monthOf(todayLocal());
   const atCurrent = month === currentMonth;
 
+  const totalEntries = entries?.length ?? 0;
+  const visibleEntries = useMemo(
+    () => (entries ?? []).slice(0, visibleCount),
+    [entries, visibleCount],
+  );
+
   const grouped = useMemo(() => {
     const map = new Map<string, NonNullable<typeof entries>>();
-    for (const e of entries ?? []) {
+    for (const e of visibleEntries) {
       const list = map.get(e.entryDate) ?? [];
       list.push(e);
       map.set(e.entryDate, list as NonNullable<typeof entries>);
     }
     return [...map.entries()].sort((a, b) => (a[0] < b[0] ? 1 : -1));
-  }, [entries]);
+  }, [visibleEntries]);
 
   const donutSlices: DonutSlice[] = useMemo(() => {
     if (!summary) return [];
@@ -222,46 +235,59 @@ export default function SpendingPage() {
                 disabled={categories.length === 0}
               />
             ) : (
-              grouped.map(([date, rows]) => (
-                <div key={date} className="mb-5">
-                  <h3 className="text-xs font-medium text-muted uppercase tracking-wider mb-2">
-                    {formatShort(date)}
-                  </h3>
-                  <ul className="bg-card rounded-xl divide-y divide-border/30">
-                    {rows.map((e) => (
-                      <li key={e._id}>
-                        <button
-                          type="button"
-                          onClick={() => setEditor({ mode: "edit", entry: e })}
-                          className="w-full flex items-center gap-3 px-4 py-3 text-left hover:opacity-80 transition-opacity"
-                        >
-                          <span
-                            className="size-2.5 rounded-full shrink-0"
-                            style={{ background: e.categoryColor }}
-                          />
-                          <span className="flex-1 min-w-0">
+              <>
+                {grouped.map(([date, rows]) => (
+                  <div key={date} className="mb-5">
+                    <h3 className="text-xs font-medium text-muted uppercase tracking-wider mb-2">
+                      {formatShort(date)}
+                    </h3>
+                    <ul className="bg-card rounded-xl divide-y divide-border/30">
+                      {rows.map((e) => (
+                        <li key={e._id}>
+                          <button
+                            type="button"
+                            onClick={() => setEditor({ mode: "edit", entry: e })}
+                            className="w-full flex items-center gap-3 px-4 py-3 text-left hover:opacity-80 transition-opacity"
+                          >
                             <span
-                              className={cn(
-                                "block text-sm font-medium",
-                                e.categoryDeleted && "italic text-muted-foreground",
-                              )}
-                            >
-                              {e.categoryName}
-                              {e.categoryDeleted && " (deleted)"}
-                            </span>
-                            {e.note && (
-                              <span className="block text-xs text-muted-foreground truncate">
-                                {e.note}
+                              className="size-2.5 rounded-full shrink-0"
+                              style={{ background: e.categoryColor }}
+                            />
+                            <span className="flex-1 min-w-0">
+                              <span
+                                className={cn(
+                                  "block text-sm font-medium",
+                                  e.categoryDeleted && "italic text-muted-foreground",
+                                )}
+                              >
+                                {e.categoryName}
+                                {e.categoryDeleted && " (deleted)"}
                               </span>
-                            )}
-                          </span>
-                          <span className="text-sm tabular-nums">{peso(e.amount)}</span>
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              ))
+                              {e.note && (
+                                <span className="block text-xs text-muted-foreground truncate">
+                                  {e.note}
+                                </span>
+                              )}
+                            </span>
+                            <span className="text-sm tabular-nums">{peso(e.amount)}</span>
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ))}
+                {totalEntries > visibleCount && (
+                  <div className="flex justify-center pt-2">
+                    <button
+                      type="button"
+                      onClick={() => setVisibleCount((n) => n + PAGE_SIZE)}
+                      className="text-sm text-muted-foreground hover:text-foreground transition-colors px-4 py-2 rounded-lg hover:bg-card"
+                    >
+                      Load more · {totalEntries - visibleCount} left
+                    </button>
+                  </div>
+                )}
+              </>
             )}
           </section>
         </>

@@ -2,10 +2,11 @@
 
 import { useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
-import { useState, useRef } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { IconPlus, IconX, IconArrow } from "@/components/icons";
+import { cn } from "@/lib/cn";
 import DayPicker from "@/components/day-picker";
 
 type Step = "welcome" | "name" | "tasks" | "pay" | "install";
@@ -126,7 +127,22 @@ export default function OnboardingPage() {
   );
 }
 
+type Platform = "ios" | "android";
+
+function detectPlatform(): Platform {
+  if (typeof navigator === "undefined") return "ios";
+  const ua = navigator.userAgent.toLowerCase();
+  if (/android/.test(ua)) return "android";
+  return "ios";
+}
+
 function InstallStep({ onFinish }: { onFinish: () => void }) {
+  const [platform, setPlatform] = useState<Platform>("ios");
+
+  useEffect(() => {
+    setPlatform(detectPlatform());
+  }, []);
+
   return (
     <div className="text-center">
       <div className="w-14 h-14 rounded-2xl bg-foreground text-background flex items-center justify-center mx-auto mb-5">
@@ -136,47 +152,118 @@ function InstallStep({ onFinish }: { onFinish: () => void }) {
         </svg>
       </div>
       <h1 className="text-[26px] font-semibold tracking-tight leading-tight mb-2">
-        Install on your iPhone
+        Install on your phone
       </h1>
-      <p className="text-muted-foreground text-[15px] max-w-[300px] mx-auto leading-relaxed mb-8">
-        Add Ledger to your home screen for a native app feel.
+      <p className="text-muted-foreground text-[15px] max-w-[300px] mx-auto leading-relaxed mb-6">
+        Add Tally to your home screen for a native app feel.
       </p>
 
-      <ol className="text-left space-y-4 mb-10 max-w-[320px] mx-auto">
-        <InstallStepItem
-          num="1"
-          title="Open in Safari"
-          body="Make sure you're using Safari, not another browser."
+      <div className="inline-flex gap-1 p-1 rounded-lg bg-secondary mb-6">
+        <PlatformTab
+          active={platform === "ios"}
+          onClick={() => setPlatform("ios")}
+          label="iPhone"
         />
-        <InstallStepItem
-          num="2"
-          title="Tap the Share button"
-          body={
-            <span className="inline-flex items-center gap-1.5">
-              Tap
-              <span className="inline-flex items-center justify-center w-6 h-6 rounded bg-secondary border border-border">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" />
-                  <polyline points="16 6 12 2 8 6" />
-                  <line x1="12" y1="2" x2="12" y2="15" />
-                </svg>
+        <PlatformTab
+          active={platform === "android"}
+          onClick={() => setPlatform("android")}
+          label="Android"
+        />
+      </div>
+
+      {platform === "ios" ? (
+        <ol className="text-left space-y-4 mb-10 max-w-[320px] mx-auto">
+          <InstallStepItem
+            num="1"
+            title="Open in Safari"
+            body="Make sure you're using Safari, not another browser."
+          />
+          <InstallStepItem
+            num="2"
+            title="Tap the Share button"
+            body={
+              <span className="inline-flex items-center gap-1.5">
+                Tap
+                <span className="inline-flex items-center justify-center w-6 h-6 rounded bg-secondary border border-border">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" />
+                    <polyline points="16 6 12 2 8 6" />
+                    <line x1="12" y1="2" x2="12" y2="15" />
+                  </svg>
+                </span>
+                at the bottom of Safari.
               </span>
-              at the bottom of Safari.
-            </span>
-          }
-        />
-        <InstallStepItem
-          num="3"
-          title="Add to Home Screen"
-          body='Scroll down and tap "Add to Home Screen", then "Add".'
-        />
-      </ol>
+            }
+          />
+          <InstallStepItem
+            num="3"
+            title="Add to Home Screen"
+            body='Scroll down and tap "Add to Home Screen", then "Add".'
+          />
+        </ol>
+      ) : (
+        <ol className="text-left space-y-4 mb-10 max-w-[320px] mx-auto">
+          <InstallStepItem
+            num="1"
+            title="Open in Chrome"
+            body="Make sure you're using Chrome (not Samsung Internet or another browser)."
+          />
+          <InstallStepItem
+            num="2"
+            title="Tap the menu"
+            body={
+              <span className="inline-flex items-center gap-1.5">
+                Tap
+                <span className="inline-flex items-center justify-center w-6 h-6 rounded bg-secondary border border-border font-mono text-[14px] leading-none">
+                  ⋮
+                </span>
+                in the top-right of Chrome.
+              </span>
+            }
+          />
+          <InstallStepItem
+            num="3"
+            title="Add to Home screen"
+            body={
+              <span>
+                Tap <span className="font-medium">&ldquo;Install app&rdquo;</span> or{" "}
+                <span className="font-medium">&ldquo;Add to Home screen&rdquo;</span>, then confirm.
+              </span>
+            }
+          />
+        </ol>
+      )}
 
       <Button size="lg" onClick={onFinish} className="w-full">
         Got it, take me in
         <IconArrow width={16} height={16} className="ml-1" strokeWidth={1.5} />
       </Button>
     </div>
+  );
+}
+
+function PlatformTab({
+  active,
+  onClick,
+  label,
+}: {
+  active: boolean;
+  onClick: () => void;
+  label: string;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        "px-4 py-1.5 rounded-md text-sm font-medium transition-colors",
+        active
+          ? "bg-foreground text-background"
+          : "text-muted-foreground hover:text-foreground",
+      )}
+    >
+      {label}
+    </button>
   );
 }
 
@@ -206,13 +293,13 @@ function Welcome({ onStart }: { onStart: () => void }) {
   return (
     <div className="fade-in text-center">
       <div className="w-14 h-14 rounded-2xl bg-foreground text-background flex items-center justify-center text-xl font-semibold mx-auto mb-5">
-        L
+        T
       </div>
       <h1 className="text-[28px] font-semibold tracking-tight leading-tight mb-2">
-        Set up your ledger
+        Set up Tally
       </h1>
       <p className="text-muted-foreground text-[15px] max-w-[280px] mx-auto leading-relaxed mb-10">
-        Track your daily work and when you get paid. Takes under a minute.
+        Track work, salary, bills, and spending. Takes under a minute.
       </p>
       <Button size="lg" onClick={onStart} className="px-8">
         Get started
@@ -394,7 +481,7 @@ function PayStep({
           disabled={payDays.length === 0 || saving}
           onClick={onFinish}
         >
-          {saving ? "Setting up…" : "Start using Ledger"}
+          {saving ? "Setting up…" : "Start using Tally"}
           {!saving && <IconArrow width={16} height={16} className="ml-1" strokeWidth={1.5} />}
         </Button>
       </div>
