@@ -119,6 +119,15 @@ export function IconTrash(props: SVGProps<SVGSVGElement>) {
   );
 }
 
+export function IconSpending(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg {...base} {...props}>
+      <path d="M3.5 7.5h14a1.5 1.5 0 0 1 1.5 1.5v9.5a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 3 18.5V6A1.5 1.5 0 0 1 4.5 4.5h11" />
+      <circle cx="15.5" cy="13.5" r="1.25" />
+    </svg>
+  );
+}
+
 export function IconSignOut(props: SVGProps<SVGSVGElement>) {
   return (
     <svg {...base} {...props}>

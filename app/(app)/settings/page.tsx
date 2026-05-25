@@ -5,7 +5,8 @@ import { useAuthActions } from "@convex-dev/auth/react";
 import { api } from "@/convex/_generated/api";
 import { Doc } from "@/convex/_generated/dataModel";
 import { useState } from "react";
-import { IconPlus, IconX, IconSignOut } from "@/components/icons";
+import Link from "next/link";
+import { IconPlus, IconX, IconSignOut, IconHistory, IconArrow } from "@/components/icons";
 import { Button } from "@/components/ui/button";
 import DayPicker from "@/components/day-picker";
 import { cn } from "@/lib/cn";
@@ -73,6 +74,20 @@ export default function SettingsPage() {
             Add
           </button>
         </div>
+      </section>
+
+      <section className="mt-8 bg-bg-2 rounded-xl p-5">
+        <h3 className="text-sm font-medium text-muted mb-3">Activity</h3>
+        <Link
+          href="/history"
+          className="flex items-center justify-between py-2 hover:opacity-80 transition-opacity"
+        >
+          <span className="flex items-center gap-3 text-base">
+            <IconHistory width={18} height={18} strokeWidth={1.4} />
+            View completion history
+          </span>
+          <IconArrow width={14} height={14} strokeWidth={1.4} className="text-muted" />
+        </Link>
       </section>
 
       <section className="mt-12 mb-8 border-t border-border pt-8">

@@ -2,14 +2,14 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { IconToday, IconSalary, IconBills, IconHistory, IconSettings } from "./icons";
+import { IconToday, IconSalary, IconBills, IconSpending, IconSettings } from "./icons";
 import { cn } from "@/lib/cn";
 
 const tabs = [
   { href: "/today", label: "Today", Icon: IconToday },
   { href: "/salary", label: "Salary", Icon: IconSalary },
   { href: "/bills", label: "Bills", Icon: IconBills },
-  { href: "/history", label: "History", Icon: IconHistory },
+  { href: "/spending", label: "Spending", Icon: IconSpending },
   { href: "/settings", label: "Settings", Icon: IconSettings },
 ];
 
