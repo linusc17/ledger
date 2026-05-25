@@ -65,4 +65,16 @@ export default defineSchema({
   })
     .index("by_user", ["userId"])
     .index("by_template_date", ["templateId", "dueDate"]),
+
+  spendEntries: defineTable({
+    userId: v.id("users"),
+    entryDate: v.string(),
+    category: v.union(
+      v.literal("needed"),
+      v.literal("unnecessary"),
+      v.literal("other"),
+    ),
+    amount: v.number(),
+    note: v.optional(v.string()),
+  }).index("by_user_date", ["userId", "entryDate"]),
 });

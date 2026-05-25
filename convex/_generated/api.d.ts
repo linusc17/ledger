@@ -15,6 +15,7 @@ import type * as http from "../http.js";
 import type * as logs from "../logs.js";
 import type * as pay from "../pay.js";
 import type * as profile from "../profile.js";
+import type * as spending from "../spending.js";
 
 import type {
   ApiFromModules,
@@ -30,6 +31,7 @@ declare const fullApi: ApiFromModules<{
   logs: typeof logs;
   pay: typeof pay;
   profile: typeof profile;
+  spending: typeof spending;
 }>;
 
 /**
