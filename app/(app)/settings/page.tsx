@@ -7,6 +7,7 @@ import { Doc } from "@/convex/_generated/dataModel";
 import { useState } from "react";
 import Link from "next/link";
 import { IconPlus, IconX, IconSignOut, IconHistory, IconArrow } from "@/components/icons";
+import { ChangePasswordDrawer } from "./ChangePasswordDrawer";
 import { Button } from "@/components/ui/button";
 import DayPicker from "@/components/day-picker";
 import { cn } from "@/lib/cn";
@@ -33,6 +34,7 @@ export default function SettingsPage() {
   const [newName, setNewName] = useState("");
 
   const hidden = new Set(profile?.hiddenTabs ?? []);
+  const [passwordOpen, setPasswordOpen] = useState(false);
 
   async function handleSignOut() {
     await signOut();
@@ -155,16 +157,31 @@ export default function SettingsPage() {
 
       <section className="mt-12 mb-8 border-t border-border pt-8">
         <h3 className="text-xs font-medium text-muted uppercase tracking-wider mb-4">Account</h3>
-        <Button
-          variant="outline"
-          size="lg"
-          className="w-full text-destructive border-destructive/30 hover:bg-destructive/10 hover:text-destructive"
-          onClick={handleSignOut}
-        >
-          <IconSignOut width={16} height={16} strokeWidth={1.4} />
-          Sign out
-        </Button>
+        <div className="space-y-3">
+          <Button
+            variant="outline"
+            size="lg"
+            className="w-full"
+            onClick={() => setPasswordOpen(true)}
+          >
+            Change password
+          </Button>
+          <Button
+            variant="outline"
+            size="lg"
+            className="w-full text-destructive border-destructive/30 hover:bg-destructive/10 hover:text-destructive"
+            onClick={handleSignOut}
+          >
+            <IconSignOut width={16} height={16} strokeWidth={1.4} />
+            Sign out
+          </Button>
+        </div>
       </section>
+
+      <ChangePasswordDrawer
+        open={passwordOpen}
+        onClose={() => setPasswordOpen(false)}
+      />
     </main>
   );
 }
