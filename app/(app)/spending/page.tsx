@@ -2,28 +2,20 @@
 
 import { useMutation, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
-import { Doc } from "@/convex/_generated/dataModel";
-import { useMemo, useState } from "react";
+import { Doc, Id } from "@/convex/_generated/dataModel";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { cn } from "@/lib/cn";
-import { IconPlus, IconArrow } from "@/components/icons";
+import { IconPlus, IconArrow, IconSettings } from "@/components/icons";
 import { todayLocal, formatShort, formatMonth } from "@/lib/date";
 import { peso, pesoZero } from "@/lib/currency";
 import { SkeletonList } from "@/components/skeleton";
 import { Button } from "@/components/ui/button";
-import { SpendDonut } from "@/components/spend-donut";
+import { SpendDonut, type DonutSlice } from "@/components/spend-donut";
 import { SpendDrawer, type SpendEditorState } from "./SpendDrawer";
+import { ManageCategoriesDrawer } from "./ManageCategoriesDrawer";
 
-const CATEGORY_LABELS = {
-  needed: "Needed",
-  unnecessary: "Unnecessary",
-  other: "Other",
-} as const;
-
-const CATEGORY_DOT = {
-  needed: "bg-[var(--success)]",
-  unnecessary: "bg-[var(--accent)]",
-  other: "bg-[var(--muted)]",
-} as const;
+const INCOME_COLOR = "var(--success)";
+const BILLS_COLOR = "var(--accent)";
 
 function monthOf(iso: string): string {
   return iso.slice(0, 7);
@@ -38,32 +30,71 @@ function shiftMonth(monthIso: string, delta: number): string {
 export default function SpendingPage() {
   const [month, setMonth] = useState<string>(monthOf(todayLocal()));
   const [editor, setEditor] = useState<SpendEditorState>({ mode: "closed" });
+  const [manageOpen, setManageOpen] = useState(false);
 
+  const categories = useQuery(api.spending.listCategories);
   const entries = useQuery(api.spending.listMonth, { month });
   const summary = useQuery(api.spending.monthSummary, { month });
 
   const createEntry = useMutation(api.spending.create);
   const updateEntry = useMutation(api.spending.update);
   const removeEntry = useMutation(api.spending.remove);
+  const seedDefaults = useMutation(api.spending.seedDefaults);
+  const createCategory = useMutation(api.spending.createCategory);
+  const updateCategory = useMutation(api.spending.updateCategory);
+  const deleteCategory = useMutation(api.spending.deleteCategory);
+
+  const didSeed = useRef(false);
+  useEffect(() => {
+    if (didSeed.current) return;
+    if (categories === undefined) return;
+    if (categories.length > 0) {
+      didSeed.current = true;
+      return;
+    }
+    didSeed.current = true;
+    seedDefaults().catch(() => { didSeed.current = false; });
+  }, [categories, seedDefaults]);
 
   const currentMonth = monthOf(todayLocal());
   const atCurrent = month === currentMonth;
 
   const grouped = useMemo(() => {
-    const map = new Map<string, Doc<"spendEntries">[]>();
+    const map = new Map<string, NonNullable<typeof entries>>();
     for (const e of entries ?? []) {
       const list = map.get(e.entryDate) ?? [];
       list.push(e);
-      map.set(e.entryDate, list);
+      map.set(e.entryDate, list as NonNullable<typeof entries>);
     }
     return [...map.entries()].sort((a, b) => (a[0] < b[0] ? 1 : -1));
   }, [entries]);
 
-  const loading = entries === undefined || summary === undefined;
+  const donutSlices: DonutSlice[] = useMemo(() => {
+    if (!summary) return [];
+    const slices: DonutSlice[] = [];
+    if (summary.income > 0) {
+      slices.push({ key: "income", label: "Income", value: summary.income, color: INCOME_COLOR });
+    }
+    if (summary.billsPaid > 0) {
+      slices.push({ key: "bills", label: "Bills", value: summary.billsPaid, color: BILLS_COLOR });
+    }
+    for (const c of summary.byCategory) {
+      if (c.amount <= 0) continue;
+      slices.push({
+        key: c.categoryId,
+        label: c.name,
+        value: c.amount,
+        color: c.color,
+      });
+    }
+    return slices;
+  }, [summary]);
+
+  const loading = entries === undefined || summary === undefined || categories === undefined;
 
   async function handleSave(data: {
     entryDate: string;
-    category: "needed" | "unnecessary" | "other";
+    categoryId: Id<"spendCategories">;
     amount: number;
     note?: string;
   }) {
@@ -84,14 +115,25 @@ export default function SpendingPage() {
     <main className="mx-auto max-w-xl px-5 pt-6 sm:px-8 sm:pt-10">
       <header className="mb-6 flex items-center justify-between">
         <h1 className="text-2xl font-semibold tracking-tight">Spending</h1>
-        <button
-          type="button"
-          onClick={() => setEditor({ mode: "create" })}
-          aria-label="Add spend"
-          className="flex items-center justify-center size-9 rounded-full bg-card text-ink hover:opacity-80 transition-opacity"
-        >
-          <IconPlus width={18} height={18} strokeWidth={1.6} />
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setManageOpen(true)}
+            aria-label="Manage categories"
+            className="flex items-center justify-center size-9 rounded-full bg-card text-ink hover:opacity-80 transition-opacity"
+          >
+            <IconSettings width={16} height={16} strokeWidth={1.5} />
+          </button>
+          <button
+            type="button"
+            onClick={() => setEditor({ mode: "create" })}
+            aria-label="Add spend"
+            disabled={categories !== undefined && categories.length === 0}
+            className="flex items-center justify-center size-9 rounded-full bg-card text-ink hover:opacity-80 transition-opacity disabled:opacity-40"
+          >
+            <IconPlus width={18} height={18} strokeWidth={1.6} />
+          </button>
+        </div>
       </header>
 
       <div className="mb-6 flex items-center justify-between bg-bg-2 rounded-xl px-3 py-2">
@@ -123,21 +165,26 @@ export default function SpendingPage() {
         <>
           <section className="fade-in mb-6 bg-card rounded-xl p-5 flex flex-col items-center">
             <SpendDonut
-              byCategory={summary.byCategory}
-              total={summary.spending}
+              slices={donutSlices}
+              centerLabel={`₱${summary.spending.toLocaleString()}`}
+              centerSubtitle="spent this month"
               className="mb-4"
             />
             <ul className="w-full max-w-xs space-y-1.5">
-              {(["needed", "unnecessary", "other"] as const).map((k) => (
-                <li key={k} className="flex items-center justify-between text-sm">
-                  <span className="flex items-center gap-2">
-                    <span className={cn("size-2.5 rounded-full", CATEGORY_DOT[k])} />
-                    {CATEGORY_LABELS[k]}
-                  </span>
-                  <span className="tabular-nums text-muted-foreground">
-                    {pesoZero(summary.byCategory[k])}
-                  </span>
-                </li>
+              {summary.income > 0 && (
+                <LegendRow color={INCOME_COLOR} label="Income" amount={summary.income} />
+              )}
+              {summary.billsPaid > 0 && (
+                <LegendRow color={BILLS_COLOR} label="Bills" amount={summary.billsPaid} />
+              )}
+              {summary.byCategory.map((c) => (
+                <LegendRow
+                  key={c.categoryId}
+                  color={c.color}
+                  label={c.name}
+                  amount={c.amount}
+                  faded={c.deleted}
+                />
               ))}
             </ul>
           </section>
@@ -170,7 +217,10 @@ export default function SpendingPage() {
 
           <section className="fade-in fade-in-2 mb-8">
             {grouped.length === 0 ? (
-              <EmptyEntries onAdd={() => setEditor({ mode: "create" })} />
+              <EmptyEntries
+                onAdd={() => setEditor({ mode: "create" })}
+                disabled={categories.length === 0}
+              />
             ) : (
               grouped.map(([date, rows]) => (
                 <div key={date} className="mb-5">
@@ -186,11 +236,18 @@ export default function SpendingPage() {
                           className="w-full flex items-center gap-3 px-4 py-3 text-left hover:opacity-80 transition-opacity"
                         >
                           <span
-                            className={cn("size-2.5 rounded-full shrink-0", CATEGORY_DOT[e.category])}
+                            className="size-2.5 rounded-full shrink-0"
+                            style={{ background: e.categoryColor }}
                           />
                           <span className="flex-1 min-w-0">
-                            <span className="block text-sm font-medium">
-                              {CATEGORY_LABELS[e.category]}
+                            <span
+                              className={cn(
+                                "block text-sm font-medium",
+                                e.categoryDeleted && "italic text-muted-foreground",
+                              )}
+                            >
+                              {e.categoryName}
+                              {e.categoryDeleted && " (deleted)"}
                             </span>
                             {e.note && (
                               <span className="block text-xs text-muted-foreground truncate">
@@ -212,19 +269,57 @@ export default function SpendingPage() {
 
       <SpendDrawer
         state={editor}
+        categories={categories ?? []}
         onSave={handleSave}
         onDelete={handleDelete}
         onClose={() => setEditor({ mode: "closed" })}
+      />
+
+      <ManageCategoriesDrawer
+        open={manageOpen}
+        categories={categories ?? []}
+        onCreate={async (name) => { await createCategory({ name }); }}
+        onRename={async (id, name) => { await updateCategory({ categoryId: id, name }); }}
+        onDelete={async (id) => { await deleteCategory({ categoryId: id }); }}
+        onClose={() => setManageOpen(false)}
       />
     </main>
   );
 }
 
-function EmptyEntries({ onAdd }: { onAdd: () => void }) {
+function LegendRow({
+  color,
+  label,
+  amount,
+  faded,
+}: {
+  color: string;
+  label: string;
+  amount: number;
+  faded?: boolean;
+}) {
+  return (
+    <li className={cn("flex items-center justify-between text-sm", faded && "opacity-60")}>
+      <span className="flex items-center gap-2">
+        <span className="size-2.5 rounded-full" style={{ background: color }} />
+        <span className={cn(faded && "italic")}>{label}{faded && " (deleted)"}</span>
+      </span>
+      <span className="tabular-nums text-muted-foreground">{pesoZero(amount)}</span>
+    </li>
+  );
+}
+
+function EmptyEntries({
+  onAdd,
+  disabled,
+}: {
+  onAdd: () => void;
+  disabled: boolean;
+}) {
   return (
     <div className="flex flex-col items-center justify-center py-12 gap-4">
       <p className="text-muted">No entries this month.</p>
-      <Button size="lg" onClick={onAdd}>
+      <Button size="lg" onClick={onAdd} disabled={disabled}>
         <IconPlus width={14} height={14} strokeWidth={1.6} />
         Log a spend
       </Button>

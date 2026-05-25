@@ -1,22 +1,23 @@
 import { cn } from "@/lib/cn";
 
-type Slice = { value: number; color: string; key: string };
+export type DonutSlice = {
+  key: string;
+  label: string;
+  value: number;
+  color: string;
+};
 
 export function SpendDonut({
-  byCategory,
-  total,
+  slices,
+  centerLabel,
+  centerSubtitle,
   className,
 }: {
-  byCategory: { needed: number; unnecessary: number; other: number };
-  total: number;
+  slices: DonutSlice[];
+  centerLabel: string;
+  centerSubtitle?: string;
   className?: string;
 }) {
-  const slices: Slice[] = [
-    { key: "needed", value: byCategory.needed, color: "var(--success)" },
-    { key: "unnecessary", value: byCategory.unnecessary, color: "var(--accent)" },
-    { key: "other", value: byCategory.other, color: "var(--muted)" },
-  ];
-
   const size = 160;
   const stroke = 18;
   const r = (size - stroke) / 2;
@@ -24,6 +25,7 @@ export function SpendDonut({
   const cx = size / 2;
   const cy = size / 2;
 
+  const total = slices.reduce((acc, s) => acc + s.value, 0);
   const isEmpty = total <= 0;
   let offset = 0;
 
@@ -62,15 +64,15 @@ export function SpendDonut({
             return seg;
           })}
       </svg>
-      <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+      <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none px-4 text-center">
         {isEmpty ? (
-          <span className="text-sm text-muted">No spending yet</span>
+          <span className="text-sm text-muted">No activity yet</span>
         ) : (
           <>
-            <span className="text-2xl font-semibold tabular-nums">
-              ₱{total.toLocaleString()}
-            </span>
-            <span className="text-xs text-muted">this month</span>
+            <span className="text-2xl font-semibold tabular-nums">{centerLabel}</span>
+            {centerSubtitle && (
+              <span className="text-xs text-muted">{centerSubtitle}</span>
+            )}
           </>
         )}
       </div>
