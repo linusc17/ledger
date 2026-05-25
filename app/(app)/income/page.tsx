@@ -5,8 +5,8 @@ import { api } from "@/convex/_generated/api";
 import { Doc } from "@/convex/_generated/dataModel";
 import { useEffect, useMemo, useState, useRef } from "react";
 import { cn } from "@/lib/cn";
-import { IconCheck, IconArrow } from "@/components/icons";
-import { todayLocal, formatShort, ordinal } from "@/lib/date";
+import { IconCheck, IconArrow, IconPlus } from "@/components/icons";
+import { todayLocal, formatShort, formatMonth, ordinal } from "@/lib/date";
 import { peso } from "@/lib/currency";
 import { SkeletonList } from "@/components/skeleton";
 import { Button } from "@/components/ui/button";
@@ -19,16 +19,28 @@ import {
   DrawerHeader,
   DrawerTitle,
 } from "@/components/ui/drawer";
+import { OtherIncomeDrawer, type OtherIncomeEditorState } from "./OtherIncomeDrawer";
 
-export default function SalaryPage() {
+function monthOf(iso: string): string {
+  return iso.slice(0, 7);
+}
+
+export default function IncomePage() {
   const clients = useQuery(api.clients.listMine);
   const periods = useQuery(api.pay.listMine);
   const markReceived = useMutation(api.pay.markReceived);
   const markPending = useMutation(api.pay.markPending);
   const updateAmount = useMutation(api.pay.updateAmount);
 
+  const month = monthOf(todayLocal());
+  const otherEntries = useQuery(api.otherIncome.listMonth, { month });
+  const createOther = useMutation(api.otherIncome.create);
+  const updateOther = useMutation(api.otherIncome.update);
+  const removeOther = useMutation(api.otherIncome.remove);
+
   const [receivingPeriod, setReceivingPeriod] = useState<Doc<"payPeriods"> | null>(null);
   const [receivingClient, setReceivingClient] = useState<Doc<"clients"> | null>(null);
+  const [otherEditor, setOtherEditor] = useState<OtherIncomeEditorState>({ mode: "closed" });
 
   const periodsByClient = useMemo(() => {
     const m = new Map<string, Doc<"payPeriods">[]>();
@@ -53,20 +65,42 @@ export default function SalaryPage() {
     setReceivingClient(null);
   }
 
+  async function handleSaveOther(data: {
+    entryDate: string;
+    amount: number;
+    source: string;
+    note?: string;
+  }) {
+    if (otherEditor.mode === "create") {
+      await createOther(data);
+    } else if (otherEditor.mode === "edit") {
+      await updateOther({ entryId: otherEditor.entry._id, ...data });
+    }
+    setOtherEditor({ mode: "closed" });
+  }
+
+  async function handleDeleteOther(id: Doc<"otherIncome">["_id"]) {
+    await removeOther({ entryId: id });
+    setOtherEditor({ mode: "closed" });
+  }
+
+  const otherTotal = (otherEntries ?? []).reduce((acc, e) => acc + e.amount, 0);
+
   return (
     <main className="mx-auto max-w-xl px-5 pt-6 sm:px-8 sm:pt-10">
       <header className="mb-8">
-        <h1 className="text-2xl font-semibold tracking-tight">Salary</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">Income</h1>
+        <p className="text-sm text-muted mt-1">Scheduled client pay and one-off income.</p>
       </header>
 
       <section className="space-y-4">
         {clients === undefined ? (
           <SkeletonList />
         ) : clients.length === 0 ? (
-          <p className="text-center text-muted py-16">No clients yet.</p>
+          <p className="text-center text-muted py-8">No clients yet.</p>
         ) : (
           clients.map((client, i) => (
-            <ClientSalaryCard
+            <ClientIncomeCard
               key={client._id}
               client={client}
               allPeriods={periodsByClient.get(client._id) ?? []}
@@ -78,12 +112,69 @@ export default function SalaryPage() {
         )}
       </section>
 
+      <section className="mt-10 mb-8 bg-card rounded-xl p-4">
+        <header className="flex items-center justify-between mb-1">
+          <h2 className="font-semibold text-lg">Other income</h2>
+          <button
+            type="button"
+            onClick={() => setOtherEditor({ mode: "create" })}
+            aria-label="Log other income"
+            className="flex items-center justify-center size-8 rounded-full bg-bg-2 text-ink hover:opacity-80 transition-opacity"
+          >
+            <IconPlus width={16} height={16} strokeWidth={1.6} />
+          </button>
+        </header>
+        <p className="text-xs text-muted-foreground mb-3">
+          {formatMonth(`${month}-01`)}
+          <span className="mx-1.5">·</span>
+          {otherEntries === undefined
+            ? "Loading…"
+            : otherEntries.length === 0
+              ? "No entries this month"
+              : `${peso(otherTotal)} this month`}
+        </p>
+
+        {otherEntries && otherEntries.length > 0 && (
+          <ul className="divide-y divide-border/30">
+            {otherEntries.map((e) => (
+              <li key={e._id}>
+                <button
+                  type="button"
+                  onClick={() => setOtherEditor({ mode: "edit", entry: e })}
+                  className="w-full flex items-center gap-3 py-2.5 text-left hover:opacity-80 transition-opacity"
+                >
+                  <span className="font-mono text-sm tabular-nums w-16 shrink-0 text-muted-foreground">
+                    {formatShort(e.entryDate)}
+                  </span>
+                  <span className="flex-1 min-w-0">
+                    <span className="block text-sm font-medium truncate">{e.source}</span>
+                    {e.note && (
+                      <span className="block text-xs text-muted-foreground truncate">
+                        {e.note}
+                      </span>
+                    )}
+                  </span>
+                  <span className="text-sm tabular-nums text-success">+{peso(e.amount)}</span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+
       <ReceiveDrawer
         period={receivingPeriod}
         clientName={receivingClient?.name ?? ""}
         defaultAmount={receivingClient?.defaultAmount}
         onConfirm={confirmReceive}
         onClose={() => { setReceivingPeriod(null); setReceivingClient(null); }}
+      />
+
+      <OtherIncomeDrawer
+        state={otherEditor}
+        onSave={handleSaveOther}
+        onDelete={handleDeleteOther}
+        onClose={() => setOtherEditor({ mode: "closed" })}
       />
     </main>
   );
@@ -173,7 +264,7 @@ function ReceiveDrawer({
   );
 }
 
-function ClientSalaryCard({
+function ClientIncomeCard({
   client,
   allPeriods,
   onReceive,
@@ -349,4 +440,3 @@ function PastRow({
     </li>
   );
 }
-

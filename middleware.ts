@@ -9,7 +9,7 @@ const isPublicRoute = createRouteMatcher(["/login", "/setup"]);
 const isSignedInRoute = createRouteMatcher([
   "/",
   "/today",
-  "/salary",
+  "/income",
   "/bills",
   "/spending",
   "/history",

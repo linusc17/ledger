@@ -176,12 +176,23 @@ export const monthSummary = query({
       .query("payPeriods")
       .withIndex("by_user", (q) => q.eq("userId", userId))
       .collect();
-    const income = pay.reduce((acc, p) => {
+    const scheduledIncome = pay.reduce((acc, p) => {
       if (p.received && p.receivedDate && p.receivedDate.startsWith(month) && p.amount) {
         return acc + p.amount;
       }
       return acc;
     }, 0);
+
+    const otherIncomes = await ctx.db
+      .query("otherIncome")
+      .withIndex("by_user_date", (q) => q.eq("userId", userId))
+      .collect();
+    const adhocIncome = otherIncomes.reduce((acc, e) => {
+      if (e.entryDate.startsWith(month)) return acc + e.amount;
+      return acc;
+    }, 0);
+
+    const income = scheduledIncome + adhocIncome;
 
     const bills = await ctx.db
       .query("billPeriods")

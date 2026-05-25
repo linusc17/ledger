@@ -18,7 +18,7 @@ type Client = Doc<"clients">;
 
 const TAB_OPTIONS: { href: string; label: string }[] = [
   { href: "/today", label: "Today" },
-  { href: "/salary", label: "Salary" },
+  { href: "/income", label: "Income" },
   { href: "/bills", label: "Bills" },
   { href: "/spending", label: "Spending" },
 ];

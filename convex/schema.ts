@@ -47,6 +47,14 @@ export default defineSchema({
     .index("by_user", ["userId"])
     .index("by_client_date", ["clientId", "payDate"]),
 
+  otherIncome: defineTable({
+    userId: v.id("users"),
+    entryDate: v.string(),
+    amount: v.number(),
+    source: v.string(),
+    note: v.optional(v.string()),
+  }).index("by_user_date", ["userId", "entryDate"]),
+
   billTemplates: defineTable({
     userId: v.id("users"),
     name: v.string(),

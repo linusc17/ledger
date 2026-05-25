@@ -299,7 +299,7 @@ function Welcome({ onStart }: { onStart: () => void }) {
         Set up Tally
       </h1>
       <p className="text-muted-foreground text-[15px] max-w-[280px] mx-auto leading-relaxed mb-10">
-        Track work, salary, bills, and spending. Takes under a minute.
+        Track work, income, bills, and spending. Takes under a minute.
       </p>
       <Button size="lg" onClick={onStart} className="px-8">
         Get started

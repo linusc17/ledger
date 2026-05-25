@@ -18,7 +18,7 @@ const mono = JetBrains_Mono({
 
 export const metadata: Metadata = {
   title: "Tally",
-  description: "Daily work, salary, bills, and spending — tracked together.",
+  description: "Daily work, income, bills, and spending — tracked together.",
   manifest: "/manifest.webmanifest",
   applicationName: "Tally",
   appleWebApp: {

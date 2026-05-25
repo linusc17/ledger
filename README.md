@@ -1,11 +1,11 @@
 # Tally
 
-A personal tracker for daily work, salary, bills, and spending. Installable as a PWA on iPhone, Android, and Mac.
+A personal tracker for daily work, income, bills, and spending. Installable as a PWA on iPhone, Android, and Mac.
 
 ## Features
 
 - **Daily task tracker** — per-client checklist you tap through each day
-- **Salary tracker** — log payments as they come in, see what's outstanding and overdue
+- **Income tracker** — scheduled client pay plus one-off income (gifts, refunds, side gigs)
 - **Pay day calendar** — tap the days of the month you get paid per client
 - **Monthly bills** — recurring bill templates, paid/overdue status
 - **Spending tracker** — ad-hoc expenses with custom categories, per-month donut and "saved" math

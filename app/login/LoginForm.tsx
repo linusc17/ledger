@@ -44,7 +44,7 @@ export default function LoginForm() {
           {mode === "signIn" ? "Welcome back." : "Create your account."}
         </h1>
         <p className="text-ink-soft mb-10 text-[15px] leading-relaxed">
-          Daily work, salary, bills, and spending — tracked together.
+          Daily work, income, bills, and spending — tracked together.
         </p>
 
         <form onSubmit={onSubmit} className="space-y-5">

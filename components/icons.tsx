@@ -21,7 +21,7 @@ export function IconToday(props: SVGProps<SVGSVGElement>) {
   );
 }
 
-export function IconSalary(props: SVGProps<SVGSVGElement>) {
+export function IconIncome(props: SVGProps<SVGSVGElement>) {
   return (
     <svg {...base} {...props}>
       <circle cx="12" cy="12" r="8.5" />
