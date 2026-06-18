@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
-import { IconToday, IconIncome, IconBills, IconSpending, IconSettings } from "./icons";
+import { IconToday, IconIncome, IconBills, IconSpending, IconBalances, IconSettings } from "./icons";
 import { cn } from "@/lib/cn";
 
 const tabs = [
@@ -12,10 +12,11 @@ const tabs = [
   { href: "/income", label: "Income", Icon: IconIncome },
   { href: "/bills", label: "Bills", Icon: IconBills },
   { href: "/spending", label: "Spending", Icon: IconSpending },
+  { href: "/balances", label: "Balances", Icon: IconBalances },
   { href: "/settings", label: "Settings", Icon: IconSettings },
 ];
 
-export const HIDEABLE_TABS = ["/today", "/income", "/bills", "/spending"] as const;
+export const HIDEABLE_TABS = ["/today", "/income", "/bills", "/spending", "/balances"] as const;
 
 export default function BottomNav() {
   const pathname = usePathname();

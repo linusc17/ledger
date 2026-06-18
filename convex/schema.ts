@@ -81,6 +81,7 @@ export default defineSchema({
     color: v.string(),
     sortOrder: v.number(),
     deletedAt: v.optional(v.string()),
+    reserved: v.optional(v.boolean()),
   }).index("by_user", ["userId"]),
 
   spendEntries: defineTable({
@@ -90,4 +91,20 @@ export default defineSchema({
     amount: v.number(),
     note: v.optional(v.string()),
   }).index("by_user_date", ["userId", "entryDate"]),
+
+  accounts: defineTable({
+    userId: v.id("users"),
+    name: v.string(),
+    color: v.string(),
+    sortOrder: v.number(),
+    currentBalance: v.number(),
+    balanceUpdatedAt: v.string(),
+    archivedAt: v.optional(v.string()),
+  }).index("by_user", ["userId"]),
+
+  balanceChecks: defineTable({
+    userId: v.id("users"),
+    checkDate: v.string(),
+    netWorth: v.number(),
+  }).index("by_user", ["userId"]),
 });

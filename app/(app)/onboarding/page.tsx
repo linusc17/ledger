@@ -9,7 +9,7 @@ import { IconPlus, IconX, IconArrow } from "@/components/icons";
 import { cn } from "@/lib/cn";
 import DayPicker from "@/components/day-picker";
 
-type Step = "welcome" | "name" | "tasks" | "pay" | "install";
+type Step = "welcome" | "name" | "tasks" | "pay" | "accounts" | "install";
 
 export default function OnboardingPage() {
   const [step, setStep] = useState<Step>("welcome");
@@ -21,7 +21,10 @@ export default function OnboardingPage() {
   const [amount, setAmount] = useState("");
   const [saving, setSaving] = useState(false);
 
+  const [accountDrafts, setAccountDrafts] = useState<{ name: string; balance: string }[]>([]);
+
   const createClient = useMutation(api.clients.create);
+  const createAccount = useMutation(api.accounts.createAccount);
   const completeOnboarding = useMutation(api.profile.completeOnboarding);
   const generatePay = useMutation(api.pay.generateMissing);
   const router = useRouter();
@@ -42,6 +45,15 @@ export default function OnboardingPage() {
     await generatePay();
     await completeOnboarding();
     setSaving(false);
+    go("accounts");
+  }
+
+  async function finishAccounts() {
+    setSaving(true);
+    for (const d of accountDrafts) {
+      if (d.name.trim()) await createAccount({ name: d.name.trim(), currentBalance: parseFloat(d.balance) || 0 });
+    }
+    setSaving(false);
     go("install");
   }
 
@@ -49,7 +61,7 @@ export default function OnboardingPage() {
     router.replace("/today");
   }
 
-  const steps: Step[] = ["welcome", "name", "tasks", "pay", "install"];
+  const steps: Step[] = ["welcome", "name", "tasks", "pay", "accounts", "install"];
   const currentIndex = steps.indexOf(step);
   const totalSteps = steps.length - 1;
 
@@ -113,6 +125,16 @@ export default function OnboardingPage() {
               amount={amount}
               setAmount={setAmount}
               onFinish={saveAndContinue}
+              saving={saving}
+            />
+          </div>
+        )}
+        {step === "accounts" && (
+          <div key="accounts" className={slideClass}>
+            <AccountsStep
+              drafts={accountDrafts}
+              setDrafts={setAccountDrafts}
+              onFinish={finishAccounts}
               saving={saving}
             />
           </div>
@@ -482,6 +504,81 @@ function PayStep({
           onClick={onFinish}
         >
           {saving ? "Setting up…" : "Start using Tally"}
+          {!saving && <IconArrow width={16} height={16} className="ml-1" strokeWidth={1.5} />}
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+function AccountsStep({
+  drafts,
+  setDrafts,
+  onFinish,
+  saving,
+}: {
+  drafts: { name: string; balance: string }[];
+  setDrafts: (d: { name: string; balance: string }[]) => void;
+  onFinish: () => void;
+  saving: boolean;
+}) {
+  const [name, setName] = useState("");
+  const [balance, setBalance] = useState("");
+
+  function add() {
+    if (!name.trim()) return;
+    setDrafts([...drafts, { name: name.trim(), balance }]);
+    setName("");
+    setBalance("");
+  }
+
+  return (
+    <div>
+      <h2 className="text-[22px] font-semibold tracking-tight leading-tight mb-1.5">
+        Where&rsquo;s your money?
+      </h2>
+      <p className="text-muted-foreground text-sm mb-6">
+        Add your accounts and what each has right now — cash, GCash, bank. You can skip
+        and add them later. We&rsquo;ll use these to catch spending you forget to log.
+      </p>
+
+      {drafts.length > 0 && (
+        <ul className="space-y-1.5 mb-3">
+          {drafts.map((d, i) => (
+            <li key={i} className="fade-in flex items-center justify-between bg-card border border-border rounded-lg px-3 py-2.5">
+              <span className="text-sm">{d.name}</span>
+              <span className="text-sm tabular-nums text-muted-foreground">
+                ₱{(parseFloat(d.balance) || 0).toLocaleString()}
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      <div className="flex items-center gap-2 mb-6">
+        <input
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder="Account"
+          className="flex-1 min-w-0 bg-secondary border border-input rounded-lg px-3 py-3 text-sm placeholder:text-muted-foreground outline-none focus:border-foreground/30 focus-visible:!outline-none"
+        />
+        <input
+          inputMode="numeric"
+          pattern="[0-9]*"
+          value={balance}
+          onChange={(e) => setBalance(e.target.value.replace(/[^0-9.]/g, ""))}
+          onKeyDown={(e) => e.key === "Enter" && add()}
+          placeholder="₱ balance"
+          className="w-28 bg-secondary border border-input rounded-lg px-3 py-3 text-sm tabular-nums placeholder:text-muted-foreground outline-none focus:border-foreground/30 focus-visible:!outline-none"
+        />
+        <Button onClick={add} disabled={!name.trim()} variant="outline" className="shrink-0 h-[46px] w-[46px] p-0">
+          <IconPlus width={18} height={18} strokeWidth={1.5} />
+        </Button>
+      </div>
+
+      <div className="pt-6">
+        <Button size="lg" className="w-full" disabled={saving} onClick={onFinish}>
+          {saving ? "Setting up…" : drafts.length === 0 ? "Skip for now" : "Continue"}
           {!saving && <IconArrow width={16} height={16} className="ml-1" strokeWidth={1.5} />}
         </Button>
       </div>

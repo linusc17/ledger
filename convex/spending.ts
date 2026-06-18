@@ -42,7 +42,7 @@ export const listCategories = query({
       .withIndex("by_user", (q) => q.eq("userId", userId))
       .collect();
     return rows
-      .filter((c) => !c.deletedAt)
+      .filter((c) => !c.deletedAt && !c.reserved)
       .sort((a, b) => a.sortOrder - b.sortOrder);
   },
 });

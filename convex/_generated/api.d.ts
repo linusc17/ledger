@@ -8,6 +8,7 @@
  * @module
  */
 
+import type * as accounts from "../accounts.js";
 import type * as auth from "../auth.js";
 import type * as bills from "../bills.js";
 import type * as clients from "../clients.js";
@@ -16,6 +17,7 @@ import type * as logs from "../logs.js";
 import type * as otherIncome from "../otherIncome.js";
 import type * as pay from "../pay.js";
 import type * as profile from "../profile.js";
+import type * as reconcileMath from "../reconcileMath.js";
 import type * as spending from "../spending.js";
 
 import type {
@@ -25,6 +27,7 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  accounts: typeof accounts;
   auth: typeof auth;
   bills: typeof bills;
   clients: typeof clients;
@@ -33,6 +36,7 @@ declare const fullApi: ApiFromModules<{
   otherIncome: typeof otherIncome;
   pay: typeof pay;
   profile: typeof profile;
+  reconcileMath: typeof reconcileMath;
   spending: typeof spending;
 }>;
 

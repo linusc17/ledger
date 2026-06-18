@@ -22,6 +22,7 @@ const TAB_OPTIONS: { href: string; label: string }[] = [
   { href: "/income", label: "Income" },
   { href: "/bills", label: "Bills" },
   { href: "/spending", label: "Spending" },
+  { href: "/balances", label: "Balances" },
 ];
 
 export default function SettingsPage() {
