@@ -49,6 +49,15 @@ export function daysInMonth(year: number, monthZeroIndexed: number): number {
   return new Date(year, monthZeroIndexed + 1, 0).getDate();
 }
 
+// "17:00" -> "5:00 PM", in whatever format the device prefers.
+export function formatTimeLabel(hhmm: string): string {
+  const [h, m] = hhmm.split(":").map(Number);
+  if (Number.isNaN(h) || Number.isNaN(m)) return hhmm;
+  const d = new Date();
+  d.setHours(h, m, 0, 0);
+  return d.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
+}
+
 export function ordinal(n: number): string {
   const s = ["th", "st", "nd", "rd"];
   const v = n % 100;

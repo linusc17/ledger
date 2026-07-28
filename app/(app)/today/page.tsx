@@ -12,12 +12,21 @@ export default function TodayPage() {
   const date = todayLocal();
   const clients = useQuery(api.clients.listMine);
   const logs = useQuery(api.logs.forDay, { logDate: date });
+  const openShifts = useQuery(api.shifts.open);
 
   const logByClient = useMemo(() => {
     const m = new Map<string, Doc<"dailyLogs">>();
     (logs ?? []).forEach((l) => m.set(l.clientId, l));
     return m;
   }, [logs]);
+
+  // Keyed off open shifts rather than today's shifts so a shift running past
+  // midnight still shows as running.
+  const shiftByClient = useMemo(() => {
+    const m = new Map<string, Doc<"shifts">>();
+    (openShifts ?? []).forEach((s) => m.set(s.clientId, s));
+    return m;
+  }, [openShifts]);
 
   const totals = useMemo(() => {
     if (!clients) return { total: 0, done: 0 };
@@ -69,6 +78,7 @@ export default function TodayPage() {
             log={logByClient.get(client._id)}
             logDate={date}
             index={i}
+            shift={shiftByClient.get(client._id)}
           />
         ))}
       </section>

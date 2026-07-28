@@ -8,12 +8,13 @@ import { useState } from "react";
 import Link from "next/link";
 import { IconPlus, IconX, IconSignOut, IconHistory, IconArrow } from "@/components/icons";
 import { ChangePasswordDrawer } from "./ChangePasswordDrawer";
+import { NotificationsSection } from "./NotificationsSection";
 import { Button } from "@/components/ui/button";
 import DayPicker from "@/components/day-picker";
 import { cn } from "@/lib/cn";
 import { SkeletonList } from "@/components/skeleton";
 import { useRouter } from "next/navigation";
-import { ordinal } from "@/lib/date";
+import { formatTimeLabel, ordinal } from "@/lib/date";
 
 type Client = Doc<"clients">;
 
@@ -156,6 +157,8 @@ export default function SettingsPage() {
         </ul>
       </section>
 
+      <NotificationsSection />
+
       <section className="mt-12 mb-8 border-t border-border pt-8">
         <h3 className="text-xs font-medium text-muted uppercase tracking-wider mb-4">Account</h3>
         <div className="space-y-3">
@@ -191,6 +194,7 @@ function ClientEditor({ client, index }: { client: Client; index: number }) {
   const updateName = useMutation(api.clients.updateName);
   const updateTasks = useMutation(api.clients.updateTasks);
   const updatePay = useMutation(api.clients.updatePay);
+  const updateClockIn = useMutation(api.clients.updateClockIn);
   const removeClient = useMutation(api.clients.remove);
 
   const [editing, setEditing] = useState(false);
@@ -200,6 +204,16 @@ function ClientEditor({ client, index }: { client: Client; index: number }) {
   const [payDays, setPayDays] = useState<number[]>(client.payDays ?? []);
   const [amount, setAmount] = useState(client.defaultAmount?.toString() ?? "");
   const [confirmRemove, setConfirmRemove] = useState(false);
+  const [clockInOn, setClockInOn] = useState(client.requiresClockIn ?? false);
+  const [mode, setMode] = useState<"duration" | "fixedTime">(
+    client.reminderMode ?? "duration",
+  );
+  const [shiftHours, setShiftHours] = useState(
+    client.defaultShiftHours?.toString() ?? "8",
+  );
+  const [clockOutTime, setClockOutTime] = useState(
+    client.clockOutTime ?? "17:00",
+  );
 
   async function saveName() {
     if (name.trim() && name !== client.name) {
@@ -246,6 +260,29 @@ function ClientEditor({ client, index }: { client: Client; index: number }) {
     });
   }
 
+  async function saveClockIn(next: {
+    requiresClockIn?: boolean;
+    reminderMode?: "duration" | "fixedTime";
+    shiftHours?: string;
+    clockOutTime?: string;
+  }) {
+    const on = next.requiresClockIn ?? clockInOn;
+    const nextMode = next.reminderMode ?? mode;
+    const hours = parseFloat(next.shiftHours ?? shiftHours);
+    const time = next.clockOutTime ?? clockOutTime;
+
+    await updateClockIn({
+      clientId: client._id,
+      requiresClockIn: on,
+      reminderMode: on ? nextMode : undefined,
+      defaultShiftHours:
+        on && nextMode === "duration" && !isNaN(hours) && hours > 0
+          ? hours
+          : undefined,
+      clockOutTime: on && nextMode === "fixedTime" ? time : undefined,
+    });
+  }
+
   const taskSummary = tasks.length === 0
     ? "No tasks"
     : tasks.length === 1
@@ -254,6 +291,11 @@ function ClientEditor({ client, index }: { client: Client; index: number }) {
   const paySummary = payDays.length === 0
     ? "No pay days set"
     : `Paid on the ${payDays.map(ordinal).join(" & ")}`;
+  const clockSummary = !clockInOn
+    ? null
+    : mode === "fixedTime"
+      ? `Clock out at ${formatTimeLabel(clockOutTime)}`
+      : `${shiftHours}h shifts`;
 
   if (!editing) {
     return (
@@ -263,6 +305,7 @@ function ClientEditor({ client, index }: { client: Client; index: number }) {
             <h3 className="text-lg font-semibold truncate">{client.name}</h3>
             <p className="text-sm text-muted-foreground mt-0.5">
               {taskSummary} · {paySummary}
+              {clockSummary && ` · ${clockSummary}`}
             </p>
           </div>
           <div className="flex items-center gap-1 shrink-0 ml-3">
@@ -373,6 +416,112 @@ function ClientEditor({ client, index }: { client: Client; index: number }) {
             className="w-full bg-bg border border-border rounded-lg px-3 py-2.5 text-sm outline-none focus:border-foreground/30 tabular-nums placeholder:text-muted focus-visible:!outline-none"
           />
         </label>
+      </div>
+
+      <div className="mt-5 pt-5 border-t border-border/50">
+        <h4 className="text-xs font-medium text-muted uppercase tracking-wider mb-3">
+          Clock in
+        </h4>
+
+        <button
+          type="button"
+          onClick={() => {
+            const next = !clockInOn;
+            setClockInOn(next);
+            saveClockIn({ requiresClockIn: next });
+          }}
+          className="w-full flex items-center justify-between py-1 hover:opacity-80 transition-opacity"
+        >
+          <span className="text-sm">Track clock in and out</span>
+          <span
+            role="switch"
+            aria-checked={clockInOn}
+            className={cn(
+              "relative w-9 h-5 rounded-full transition-colors shrink-0",
+              clockInOn ? "bg-foreground" : "bg-border",
+            )}
+          >
+            <span
+              className={cn(
+                "absolute top-0.5 size-4 rounded-full bg-background transition-all",
+                clockInOn ? "left-[18px]" : "left-0.5",
+              )}
+            />
+          </span>
+        </button>
+
+        {clockInOn && (
+          <div className="mt-4 space-y-4">
+            <div>
+              <span className="text-[11px] text-muted-foreground block mb-1.5">
+                Remind me to clock out
+              </span>
+              <div className="flex gap-2">
+                {(
+                  [
+                    ["duration", "After a set time"],
+                    ["fixedTime", "At a set time"],
+                  ] as const
+                ).map(([value, label]) => (
+                  <button
+                    key={value}
+                    type="button"
+                    onClick={() => {
+                      setMode(value);
+                      saveClockIn({ reminderMode: value });
+                    }}
+                    className={cn(
+                      "flex-1 rounded-lg px-3 py-2 text-xs transition-colors border",
+                      mode === value
+                        ? "bg-ink text-bg border-transparent"
+                        : "bg-bg border-border text-muted-foreground hover:text-foreground",
+                    )}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {mode === "duration" ? (
+              <label className="block">
+                <span className="text-[11px] text-muted-foreground block mb-1">
+                  Shift length in hours
+                </span>
+                <input
+                  inputMode="decimal"
+                  value={shiftHours}
+                  onChange={(e) =>
+                    setShiftHours(e.target.value.replace(/[^0-9.]/g, ""))
+                  }
+                  onBlur={() => saveClockIn({})}
+                  className="w-full bg-bg border border-border rounded-lg px-3 py-2.5 text-sm outline-none focus:border-foreground/30 tabular-nums focus-visible:!outline-none"
+                />
+                <span className="text-[11px] text-muted-foreground block mt-1">
+                  You can pick a different length on the day itself.
+                </span>
+              </label>
+            ) : (
+              <label className="block">
+                <span className="text-[11px] text-muted-foreground block mb-1">
+                  Clock out at
+                </span>
+                <input
+                  type="time"
+                  value={clockOutTime}
+                  onChange={(e) => {
+                    setClockOutTime(e.target.value);
+                    saveClockIn({ clockOutTime: e.target.value });
+                  }}
+                  className="w-full bg-bg border border-border rounded-lg px-3 py-2.5 text-sm outline-none focus:border-foreground/30 tabular-nums focus-visible:!outline-none"
+                />
+                <span className="text-[11px] text-muted-foreground block mt-1">
+                  The reminder comes at this time no matter when you clocked in.
+                </span>
+              </label>
+            )}
+          </div>
+        )}
       </div>
     </article>
   );

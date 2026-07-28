@@ -14,10 +14,13 @@ import type * as bills from "../bills.js";
 import type * as clients from "../clients.js";
 import type * as http from "../http.js";
 import type * as logs from "../logs.js";
+import type * as notifications from "../notifications.js";
 import type * as otherIncome from "../otherIncome.js";
 import type * as pay from "../pay.js";
 import type * as profile from "../profile.js";
+import type * as push from "../push.js";
 import type * as reconcileMath from "../reconcileMath.js";
+import type * as shifts from "../shifts.js";
 import type * as spending from "../spending.js";
 
 import type {
@@ -33,10 +36,13 @@ declare const fullApi: ApiFromModules<{
   clients: typeof clients;
   http: typeof http;
   logs: typeof logs;
+  notifications: typeof notifications;
   otherIncome: typeof otherIncome;
   pay: typeof pay;
   profile: typeof profile;
+  push: typeof push;
   reconcileMath: typeof reconcileMath;
+  shifts: typeof shifts;
   spending: typeof spending;
 }>;
 

@@ -19,6 +19,7 @@ export default function HistoryPage() {
 
   const clients = useQuery(api.clients.listMine);
   const logs = useQuery(api.logs.forRange, { startDate, endDate });
+  const shifts = useQuery(api.shifts.forRange, { startDate, endDate });
 
   const logsByClient = useMemo(() => {
     const m = new Map<string, typeof logs>();
@@ -29,6 +30,17 @@ export default function HistoryPage() {
     }
     return m;
   }, [logs]);
+
+  // Only finished shifts count — one still running has no length yet.
+  const hoursByClient = useMemo(() => {
+    const m = new Map<string, number>();
+    for (const s of shifts ?? []) {
+      if (s.clockOutAt === undefined) continue;
+      const hours = (s.clockOutAt - s.clockInAt) / 3600_000;
+      m.set(s.clientId, (m.get(s.clientId) ?? 0) + hours);
+    }
+    return m;
+  }, [shifts]);
 
   const monthLabel = new Date(year, month, 1).toLocaleDateString(undefined, {
     month: "long",
@@ -88,6 +100,7 @@ export default function HistoryPage() {
               year={year}
               month={month}
               logsForClient={logsByClient.get(c._id) ?? []}
+              hoursThisMonth={hoursByClient.get(c._id)}
             />
           ))
         )}

@@ -12,11 +12,13 @@ export default function CalendarHeatmap({
   year,
   month,
   logsForClient,
+  hoursThisMonth,
 }: {
   client: Client;
   year: number;
   month: number;
   logsForClient: Log[];
+  hoursThisMonth?: number;
 }) {
   const logByDate = new Map<string, Log>();
   for (const l of logsForClient) logByDate.set(l.logDate, l);
@@ -43,6 +45,11 @@ export default function CalendarHeatmap({
     <div className="bg-bg-2 rounded-xl p-5">
       <header className="flex items-center justify-between mb-4">
         <h3 className="font-semibold">{client.name}</h3>
+        {hoursThisMonth !== undefined && hoursThisMonth > 0 && (
+          <span className="font-mono text-xs tabular-nums text-muted">
+            {hoursThisMonth.toFixed(1)}h
+          </span>
+        )}
       </header>
 
       <div className="grid grid-cols-7 gap-1 mb-1">

@@ -23,7 +23,35 @@ export default defineSchema({
     payDays: v.array(v.number()),
     defaultAmount: v.optional(v.number()),
     sortOrder: v.number(),
+    requiresClockIn: v.optional(v.boolean()),
+    reminderMode: v.optional(
+      v.union(v.literal("duration"), v.literal("fixedTime")),
+    ),
+    defaultShiftHours: v.optional(v.number()),
+    clockOutTime: v.optional(v.string()),
   }).index("by_user", ["userId"]),
+
+  shifts: defineTable({
+    userId: v.id("users"),
+    clientId: v.id("clients"),
+    shiftDate: v.string(),
+    clockInAt: v.number(),
+    remindAt: v.optional(v.number()),
+    clockOutAt: v.optional(v.number()),
+    reminderJobId: v.optional(v.id("_scheduled_functions")),
+  })
+    .index("by_user_date", ["userId", "shiftDate"])
+    .index("by_user_open", ["userId", "clockOutAt"])
+    .index("by_client_date", ["clientId", "shiftDate"]),
+
+  pushSubscriptions: defineTable({
+    userId: v.id("users"),
+    endpoint: v.string(),
+    p256dh: v.string(),
+    auth: v.string(),
+  })
+    .index("by_user", ["userId"])
+    .index("by_endpoint", ["endpoint"]),
 
   dailyLogs: defineTable({
     userId: v.id("users"),

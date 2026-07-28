@@ -59,6 +59,33 @@ export const updatePay = mutation({
   },
 });
 
+export const updateClockIn = mutation({
+  args: {
+    clientId: v.id("clients"),
+    requiresClockIn: v.boolean(),
+    reminderMode: v.optional(
+      v.union(v.literal("duration"), v.literal("fixedTime")),
+    ),
+    defaultShiftHours: v.optional(v.number()),
+    clockOutTime: v.optional(v.string()),
+  },
+  handler: async (
+    ctx,
+    { clientId, requiresClockIn, reminderMode, defaultShiftHours, clockOutTime },
+  ) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new Error("not authenticated");
+    const client = await ctx.db.get(clientId);
+    if (!client || client.userId !== userId) throw new Error("not found");
+    await ctx.db.patch(clientId, {
+      requiresClockIn,
+      reminderMode,
+      defaultShiftHours,
+      clockOutTime,
+    });
+  },
+});
+
 export const reorder = mutation({
   args: { clientIds: v.array(v.id("clients")) },
   handler: async (ctx, { clientIds }) => {
@@ -114,6 +141,14 @@ export const remove = mutation({
       .withIndex("by_client_date", (q) => q.eq("clientId", clientId))
       .collect();
     for (const p of periods) await ctx.db.delete(p._id);
+    const shifts = await ctx.db
+      .query("shifts")
+      .withIndex("by_client_date", (q) => q.eq("clientId", clientId))
+      .collect();
+    for (const s of shifts) {
+      if (s.reminderJobId) await ctx.scheduler.cancel(s.reminderJobId);
+      await ctx.db.delete(s._id);
+    }
     await ctx.db.delete(clientId);
   },
 });

@@ -5,6 +5,7 @@ import { api } from "@/convex/_generated/api";
 import { Doc } from "@/convex/_generated/dataModel";
 import { useState, useRef, useEffect } from "react";
 import TaskCheckbox from "./task-checkbox";
+import ClockControl from "./clock-control";
 import { IconNote, IconPlus } from "./icons";
 import { cn } from "@/lib/cn";
 import { Button } from "@/components/ui/button";
@@ -20,17 +21,20 @@ import {
 
 type Client = Doc<"clients">;
 type Log = Doc<"dailyLogs"> | undefined;
+type Shift = Doc<"shifts"> | undefined;
 
 export default function ClientCard({
   client,
   log,
   logDate,
   index,
+  shift,
 }: {
   client: Client;
   log: Log;
   logDate: string;
   index: number;
+  shift: Shift;
 }) {
   const toggle = useMutation(api.logs.toggleTask);
   const setNotesMut = useMutation(api.logs.setNotes);
@@ -99,6 +103,10 @@ export default function ClientCard({
             {count}/{total}
           </span>
         </header>
+
+        {client.requiresClockIn && (
+          <ClockControl client={client} shift={shift} shiftDate={logDate} />
+        )}
 
         {total > 0 && (
           <ul className="space-y-0.5">
