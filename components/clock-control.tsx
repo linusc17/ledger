@@ -36,14 +36,6 @@ function formatRunning(ms: number): string {
   return `${hours}:${pad(minutes)}:${pad(seconds)}`;
 }
 
-function formatLength(ms: number): string {
-  const minutes = Math.round(ms / 60000);
-  const h = Math.floor(minutes / 60);
-  const m = minutes % 60;
-  if (h === 0) return `${m}m`;
-  return m === 0 ? `${h}h` : `${h}h ${m}m`;
-}
-
 function formatTimeOfDay(ts: number): string {
   return new Date(ts).toLocaleTimeString(undefined, {
     hour: "numeric",
@@ -170,13 +162,16 @@ export default function ClockControl({
           <div className="px-4 pb-2 space-y-4">
             <label className="block">
               <span className="text-[11px] text-muted-foreground block mb-1">
-                Clocked in at
+                Started at
               </span>
+              {/* appearance-none: Safari gives time inputs an intrinsic width
+                  and otherwise ignores w-full, leaving them narrower than the
+                  other fields. */}
               <input
                 type="time"
                 value={startTime}
                 onChange={(e) => setStartTime(e.target.value)}
-                className="w-full bg-secondary border border-input rounded-lg px-4 py-3 text-base tabular-nums outline-none focus:border-foreground/30 focus-visible:!outline-none"
+                className="block w-full appearance-none bg-secondary border border-input rounded-lg px-4 py-3 text-base tabular-nums outline-none focus:border-foreground/30 focus-visible:!outline-none"
               />
             </label>
 
@@ -188,7 +183,7 @@ export default function ClockControl({
                 <select
                   value={hours}
                   onChange={(e) => setHours(Number(e.target.value))}
-                  className="w-full bg-secondary border border-input rounded-lg px-4 py-3 text-base tabular-nums outline-none focus:border-foreground/30 focus-visible:!outline-none"
+                  className="block w-full bg-secondary border border-input rounded-lg px-4 py-3 text-base tabular-nums outline-none focus:border-foreground/30 focus-visible:!outline-none"
                 >
                   {choices.map((h) => (
                     <option key={h} value={h}>
@@ -204,7 +199,7 @@ export default function ClockControl({
                 ? "Pick a time that has already passed."
                 : previewRemindAt === undefined || previewIsPast
                   ? "No reminder — that time has already passed."
-                  : `Reminder at ${formatTimeOfDay(previewRemindAt)}.`}
+                  : `Ends at: ${formatTimeOfDay(previewRemindAt)}`}
             </p>
           </div>
 
@@ -256,25 +251,21 @@ export default function ClockControl({
     <div className="mb-4">
       <div className="flex items-center justify-between gap-3">
         <div className="min-w-0">
-          <div>
-            <span
-              className={cn(
-                "font-mono text-lg tabular-nums",
-                overdue ? "text-accent" : "text-ink",
-              )}
-            >
-              {formatRunning(elapsed)}
-            </span>
-            <span className="text-xs text-muted ml-2">
-              {total !== undefined
-                ? fixedMode
-                  ? `until ${formatTimeOfDay(shift.remindAt!)}`
-                  : `of ${formatLength(total)}`
-                : "no reminder"}
-            </span>
-          </div>
+          <span
+            className={cn(
+              "font-mono text-lg tabular-nums",
+              overdue ? "text-accent" : "text-ink",
+            )}
+          >
+            {formatRunning(elapsed)}
+          </span>
           <p className="text-[11px] text-muted mt-0.5">
-            Started {formatTimeOfDay(shift.clockInAt)}
+            Started at: {formatTimeOfDay(shift.clockInAt)}
+          </p>
+          <p className="text-[11px] text-muted">
+            {shift.remindAt
+              ? `Ends at: ${formatTimeOfDay(shift.remindAt)}`
+              : "No reminder set"}
           </p>
         </div>
         <button

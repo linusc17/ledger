@@ -513,7 +513,7 @@ function ClientEditor({ client, index }: { client: Client; index: number }) {
                     setClockOutTime(e.target.value);
                     saveClockIn({ clockOutTime: e.target.value });
                   }}
-                  className="w-full bg-bg border border-border rounded-lg px-3 py-2.5 text-sm outline-none focus:border-foreground/30 tabular-nums focus-visible:!outline-none"
+                  className="block w-full appearance-none bg-bg border border-border rounded-lg px-3 py-2.5 text-sm outline-none focus:border-foreground/30 tabular-nums focus-visible:!outline-none"
                 />
                 <span className="text-[11px] text-muted-foreground block mt-1">
                   The reminder comes at this time no matter when you clocked in.
