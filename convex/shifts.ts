@@ -17,20 +17,6 @@ export const open = query({
   },
 });
 
-export const forDay = query({
-  args: { shiftDate: v.string() },
-  handler: async (ctx, { shiftDate }) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) return [];
-    return await ctx.db
-      .query("shifts")
-      .withIndex("by_user_date", (q) =>
-        q.eq("userId", userId).eq("shiftDate", shiftDate),
-      )
-      .collect();
-  },
-});
-
 export const forRange = query({
   args: { startDate: v.string(), endDate: v.string() },
   handler: async (ctx, { startDate, endDate }) => {
@@ -55,9 +41,10 @@ export const clockIn = mutation({
   args: {
     clientId: v.id("clients"),
     shiftDate: v.string(),
+    clockInAt: v.optional(v.number()),
     remindAt: v.optional(v.number()),
   },
-  handler: async (ctx, { clientId, shiftDate, remindAt }) => {
+  handler: async (ctx, { clientId, shiftDate, clockInAt, remindAt }) => {
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new Error("not authenticated");
     const client = await ctx.db.get(clientId);
@@ -74,6 +61,10 @@ export const clockIn = mutation({
     }
 
     const now = Date.now();
+    // The device supplies the start instant so it can be backdated, and so the
+    // shift length is exact: sampling clockInAt here while remindAt came from
+    // the device would make every shift short by the network round-trip.
+    const startedAt = Math.min(clockInAt ?? now, now);
     // A reminder in the past is meaningless — clocking in after the fixed
     // clock-out time just runs the shift with no nudge.
     const scheduledFor = remindAt && remindAt > now ? remindAt : undefined;
@@ -82,7 +73,7 @@ export const clockIn = mutation({
       userId,
       clientId,
       shiftDate,
-      clockInAt: now,
+      clockInAt: startedAt,
       remindAt: scheduledFor,
     });
 
@@ -115,19 +106,5 @@ export const clockOut = mutation({
       clockOutAt: Date.now(),
       reminderJobId: undefined,
     });
-  },
-});
-
-export const remove = mutation({
-  args: { shiftId: v.id("shifts") },
-  handler: async (ctx, { shiftId }) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error("not authenticated");
-    const shift = await ctx.db.get(shiftId);
-    if (!shift || shift.userId !== userId) throw new Error("not found");
-    if (shift.reminderJobId) {
-      await ctx.scheduler.cancel(shift.reminderJobId);
-    }
-    await ctx.db.delete(shiftId);
   },
 });
