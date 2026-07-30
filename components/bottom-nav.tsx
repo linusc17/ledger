@@ -41,6 +41,14 @@ export default function BottomNav() {
                   the plain-click case, to wrap it in a view transition. */}
               <Link
                 href={href}
+                // Every route here is dynamic, because the root layout's auth
+                // provider reads cookies. Default prefetch defers the whole
+                // tree for a dynamic route with no loading boundary, so a tap
+                // would block on a full RSC round trip — with the view
+                // transition holding a frozen snapshot for the entire wait.
+                // Full prefetch caches the payload up front so the navigation
+                // commits from memory and the slide can start immediately.
+                prefetch={true}
                 onClick={(e) => {
                   if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
                   e.preventDefault();

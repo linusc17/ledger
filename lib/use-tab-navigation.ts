@@ -3,15 +3,18 @@
 import { useCallback, useEffect, useRef } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { directionBetween } from "@/lib/tabs";
+import { useReducedMotion } from "@/lib/use-reduced-motion";
 
-// If the route never commits (a failed navigation, a redirect back to where we
-// started) the transition promise would hang and the browser would hold the
-// frozen snapshot until its own 4s timeout. Cut it loose well before that.
-const COMMIT_TIMEOUT_MS = 1000;
-
-function prefersReducedMotion(): boolean {
-  return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-}
+/**
+ * How long to hold the outgoing frame waiting for the route to commit.
+ *
+ * startViewTransition freezes the page while its callback settles, so this is
+ * a budget for how long the app may appear to hang, not a timeout to be
+ * generous with. Routes are prefetched, so a commit normally lands within a
+ * frame or two; anything beyond this means a cold cache or a bad connection,
+ * and a plain instant navigation beats a frozen screen.
+ */
+const COMMIT_DEADLINE_MS = 300;
 
 /**
  * Navigate between tabs with a directional page transition.
@@ -24,7 +27,9 @@ function prefersReducedMotion(): boolean {
 export function useTabNavigation() {
   const router = useRouter();
   const pathname = usePathname();
+  const reduced = useReducedMotion();
   const commitRef = useRef<(() => void) | null>(null);
+  const transitionRef = useRef<ViewTransition | null>(null);
 
   const commit = useCallback(() => {
     commitRef.current?.();
@@ -44,7 +49,7 @@ export function useTabNavigation() {
       const isCurrent = pathname === href || pathname.startsWith(`${href}/`);
       if (isCurrent) return;
 
-      if (typeof document.startViewTransition !== "function" || prefersReducedMotion()) {
+      if (typeof document.startViewTransition !== "function" || reduced) {
         router.push(href);
         return;
       }
@@ -55,19 +60,30 @@ export function useTabNavigation() {
       const transition = document.startViewTransition(
         () =>
           new Promise<void>((resolve) => {
-            const timer = window.setTimeout(resolve, COMMIT_TIMEOUT_MS);
+            const timer = window.setTimeout(() => {
+              // Drop the animation rather than keep holding the old frame.
+              // The navigation still lands; it just lands without a slide.
+              transitionRef.current?.skipTransition();
+              resolve();
+            }, COMMIT_DEADLINE_MS);
+
             commitRef.current = () => {
               window.clearTimeout(timer);
               resolve();
             };
+
             router.push(href);
           }),
       );
+
+      // Set before the deadline can fire: startViewTransition runs its callback
+      // asynchronously, and the timer is armed inside that callback.
+      transitionRef.current = transition;
 
       void transition.finished.finally(() => {
         delete root.dataset.nav;
       });
     },
-    [pathname, router],
+    [pathname, router, reduced],
   );
 }
