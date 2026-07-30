@@ -144,12 +144,119 @@ body {
   font-feature-settings: "tnum", "zero";
 }
 
+/* ---------------------------------------------------------------- motion */
+
+:root {
+  --dur-fast: 120ms;
+  --dur-base: 220ms;
+  --dur-page: 280ms;
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* Page transitions.
+ *
+ * Direction comes from `data-nav` on <html>, stamped by useTabNavigation just
+ * before it starts the transition. Forward mimics an iOS push: the incoming
+ * page rides in from the right at full opacity while the outgoing one drifts
+ * a shorter distance left and fades, which reads as depth rather than a swap.
+ * Back mirrors it — the outgoing page is the card being dismissed, so it
+ * travels the full width and the page underneath eases back to rest. */
+
+@keyframes page-enter-from-right {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+@keyframes page-exit-to-left {
+  from { transform: translateX(0); opacity: 1; }
+  to { transform: translateX(-30%); opacity: 0; }
+}
+@keyframes page-enter-from-left {
+  from { transform: translateX(-30%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+@keyframes page-exit-to-right {
+  from { transform: translateX(0); }
+  to { transform: translateX(100%); }
+}
+
+::view-transition-old(root),
+::view-transition-new(root) {
+  /* Replaces the default cross-fade, which would otherwise play underneath
+     our own animation and wash both layers out mid-slide. */
+  animation: none;
+  mix-blend-mode: normal;
+}
+
+html[data-nav="forward"]::view-transition-old(root) {
+  animation: page-exit-to-left var(--dur-page) var(--ease-out) both;
+}
+html[data-nav="forward"]::view-transition-new(root) {
+  animation: page-enter-from-right var(--dur-page) var(--ease-out) both;
+}
+
+html[data-nav="back"]::view-transition-old(root) {
+  animation: page-exit-to-right var(--dur-page) var(--ease-out) both;
+  /* The dismissed page has to sit above the one it reveals; without this the
+     incoming snapshot paints on top and the card appears to leave from under. */
+  z-index: 1;
+}
+html[data-nav="back"]::view-transition-new(root) {
+  animation: page-enter-from-left var(--dur-page) var(--ease-out) both;
+  z-index: 0;
+}
+
+/* Lifting the tab bar out of the root snapshot keeps it planted while the
+   content slides beneath it. Without this it slides too and the whole
+   illusion of a fixed chrome around moving content collapses. */
+.tab-bar {
+  view-transition-name: tab-bar;
+}
+::view-transition-old(tab-bar),
+::view-transition-new(tab-bar) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+::view-transition-old(tab-bar) { opacity: 0; }
+
+/* Named separately so the browser interpolates the indicator between its old
+   and new position for free — it glides across the bar during the page slide
+   instead of teleporting with the rest of the static nav snapshot. */
+.tab-indicator {
+  view-transition-name: tab-indicator;
+}
+::view-transition-group(tab-indicator) {
+  animation-duration: var(--dur-page);
+  animation-timing-function: var(--ease-out);
+}
+
+/* Press feedback. Pointer-coarse only: on a mouse this reads as a flinch,
+   but under a thumb it is most of what separates an app from a web page. */
+@media (hover: none) {
+  .tap {
+    -webkit-tap-highlight-color: transparent;
+    transition: transform var(--dur-fast) var(--ease-out);
+  }
+  .tap:active {
+    transform: scale(0.96);
+  }
+}
+
 @keyframes check-in {
   0% { transform: scale(0); opacity: 0; }
   60% { transform: scale(1.15); opacity: 1; }
   100% { transform: scale(1); opacity: 1; }
 }
 .check-enter { animation: check-in 200ms cubic-bezier(0.34, 1.56, 0.64, 1); }
+
+/* Sheet contents arrive with the sheet instead of being fully formed the
+   instant it lands. Vaul animates the panel; this animates what is inside it. */
+.drawer-stagger > * {
+  animation: fade-in var(--dur-base) var(--ease-out) both;
+}
+.drawer-stagger > *:nth-child(2) { animation-delay: 40ms; }
+.drawer-stagger > *:nth-child(3) { animation-delay: 80ms; }
+.drawer-stagger > *:nth-child(n + 4) { animation-delay: 120ms; }
 
 @keyframes drawer-up {
   0% { opacity: 0; transform: translateY(6px); }
@@ -177,6 +284,43 @@ body {
   100% { opacity: 1; transform: translateX(0); }
 }
 
+/* List rows that appear and disappear.
+ *
+ * The 1fr/0fr grid track is the trick that makes height animatable without
+ * measuring anything in JS. `list-item-out` deliberately omits a `from` block
+ * so the row collapses from whatever height and margin it currently has —
+ * including the margin `space-y-*` puts between siblings, which would
+ * otherwise leave a gap behind after the row itself has gone. */
+.list-row {
+  display: grid;
+  grid-template-rows: 1fr;
+}
+.list-row > * {
+  overflow: hidden;
+  min-height: 0;
+}
+.list-row[data-state="entering"] {
+  animation: list-item-in var(--dur-base) var(--ease-out) both;
+}
+.list-row[data-state="exiting"] {
+  animation: list-item-out var(--dur-base) var(--ease-out) both;
+  pointer-events: none;
+}
+
+@keyframes list-item-in {
+  from { grid-template-rows: 0fr; opacity: 0; }
+  to { grid-template-rows: 1fr; opacity: 1; }
+}
+
+@keyframes list-item-out {
+  to {
+    grid-template-rows: 0fr;
+    opacity: 0;
+    margin-top: 0;
+    margin-bottom: 0;
+  }
+}
+
 *:focus-visible {
   outline: 1.5px solid var(--ink);
   outline-offset: 2px;
@@ -190,6 +334,28 @@ body {
 
 input, textarea, button, select {
   font-family: inherit;
+}
+
+/* Directional full-width slides are exactly the motion class that triggers
+ * vestibular symptoms, so honour the preference everywhere rather than per
+ * component. useTabNavigation reads the same preference in JS and skips the
+ * view transition outright, since a suppressed animation would still hold the
+ * page on a frozen snapshot for its duration. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
+  }
 }
 
 @layer base {

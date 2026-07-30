@@ -9,6 +9,7 @@ import { IconCheck, IconArrow, IconPlus, IconTrash } from "@/components/icons";
 import { todayLocal, formatShort, ordinal } from "@/lib/date";
 import { peso } from "@/lib/currency";
 import { SkeletonList } from "@/components/skeleton";
+import AnimatedList from "@/components/motion/animated-list";
 import { Button } from "@/components/ui/button";
 import {
   Drawer,
@@ -104,23 +105,27 @@ export default function BillsPage() {
         )}
       </header>
 
+      {/* AnimatedList renders a fragment, so the rows stay direct children of
+          the section and its space-y still applies to them. */}
       <section className="space-y-4">
         {loading ? (
           <SkeletonList />
         ) : templates.length === 0 ? (
           <EmptyState onAdd={() => setEditor({ mode: "create" })} />
         ) : (
-          templates.map((template, i) => (
-            <BillCard
-              key={template._id}
-              template={template}
-              allPeriods={periodsByTemplate.get(template._id) ?? []}
-              onPay={(p) => openPay(p, template)}
-              onUndo={async (id) => { await markUnpaid({ periodId: id }); }}
-              onEdit={() => setEditor({ mode: "edit", template })}
-              index={i}
-            />
-          ))
+          <AnimatedList>
+            {templates.map((template, i) => (
+              <BillCard
+                key={template._id}
+                template={template}
+                allPeriods={periodsByTemplate.get(template._id) ?? []}
+                onPay={(p) => openPay(p, template)}
+                onUndo={async (id) => { await markUnpaid({ periodId: id }); }}
+                onEdit={() => setEditor({ mode: "edit", template })}
+                index={i}
+              />
+            ))}
+          </AnimatedList>
         )}
       </section>
 

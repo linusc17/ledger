@@ -6,7 +6,7 @@ import { Doc } from "@/convex/_generated/dataModel";
 import { useEffect, useMemo, useState, useRef } from "react";
 import { cn } from "@/lib/cn";
 import { IconCheck, IconArrow, IconPlus } from "@/components/icons";
-import { todayLocal, formatShort, formatMonth, ordinal } from "@/lib/date";
+import { todayLocal, formatShort, formatMonth, ordinal, monthOf } from "@/lib/date";
 import { peso } from "@/lib/currency";
 import { SkeletonList } from "@/components/skeleton";
 import { Button } from "@/components/ui/button";
@@ -20,10 +20,6 @@ import {
   DrawerTitle,
 } from "@/components/ui/drawer";
 import { OtherIncomeDrawer, type OtherIncomeEditorState } from "./OtherIncomeDrawer";
-
-function monthOf(iso: string): string {
-  return iso.slice(0, 7);
-}
 
 export default function IncomePage() {
   const clients = useQuery(api.clients.listMine);

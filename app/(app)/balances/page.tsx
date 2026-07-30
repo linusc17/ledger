@@ -10,6 +10,8 @@ import { peso, pesoZero } from "@/lib/currency";
 import { todayLocal, parseLocal } from "@/lib/date";
 import { SkeletonList } from "@/components/skeleton";
 import { Button } from "@/components/ui/button";
+import AnimatedList from "@/components/motion/animated-list";
+import { AnimatedNumber } from "@/components/motion/animated-number";
 import { ReconcileDrawer } from "./ReconcileDrawer";
 import { ManageAccountsDrawer } from "./ManageAccountsDrawer";
 
@@ -71,7 +73,11 @@ export default function BalancesPage() {
         <>
           <section className="fade-in mb-6 bg-card rounded-xl p-5 text-center">
             <p className="text-xs text-muted-foreground mb-1">Net worth</p>
-            <p className="text-4xl font-semibold tabular-nums mb-2">{pesoZero(summary!.netWorth)}</p>
+            <AnimatedNumber
+              value={summary!.netWorth}
+              format={(n) => pesoZero(Math.round(n))}
+              className="block text-4xl font-semibold tabular-nums mb-2"
+            />
             <p className="text-xs text-muted-foreground">{lastCheckedLabel(summary!.lastCheckDate)}</p>
           </section>
 
@@ -87,18 +93,24 @@ export default function BalancesPage() {
 
           <section className="fade-in fade-in-2 mb-6">
             <ul className="bg-card rounded-xl divide-y divide-border/30">
-              {accounts.map((a) => (
-                <li key={a._id} className="flex items-center gap-3 px-4 py-3.5">
-                  <span className="size-2.5 rounded-full shrink-0" style={{ background: a.color }} />
-                  <span className="flex-1 min-w-0">
-                    <span className="block text-sm font-medium">{a.name}</span>
-                    <span className="block text-xs text-muted-foreground">
-                      {lastCheckedLabel(a.balanceUpdatedAt)}
+              <AnimatedList as="li">
+                {accounts.map((a) => (
+                  <div key={a._id} className="flex items-center gap-3 px-4 py-3.5">
+                    <span className="size-2.5 rounded-full shrink-0" style={{ background: a.color }} />
+                    <span className="flex-1 min-w-0">
+                      <span className="block text-sm font-medium">{a.name}</span>
+                      <span className="block text-xs text-muted-foreground">
+                        {lastCheckedLabel(a.balanceUpdatedAt)}
+                      </span>
                     </span>
-                  </span>
-                  <span className="text-sm tabular-nums">{peso(a.currentBalance)}</span>
-                </li>
-              ))}
+                    <AnimatedNumber
+                      value={a.currentBalance}
+                      format={(n) => peso(Math.round(n))}
+                      className="text-sm tabular-nums"
+                    />
+                  </div>
+                ))}
+              </AnimatedList>
             </ul>
           </section>
 

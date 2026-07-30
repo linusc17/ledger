@@ -6,6 +6,7 @@ import { Doc } from "@/convex/_generated/dataModel";
 import { todayLocal, formatLong } from "@/lib/date";
 import ClientCard from "@/components/client-card";
 import { SkeletonList } from "@/components/skeleton";
+import AnimatedList from "@/components/motion/animated-list";
 import { useMemo } from "react";
 
 export default function TodayPage() {
@@ -71,16 +72,18 @@ export default function TodayPage() {
       )}
 
       <section className="space-y-6">
-        {clients?.map((client, i) => (
-          <ClientCard
-            key={client._id}
-            client={client}
-            log={logByClient.get(client._id)}
-            logDate={date}
-            index={i}
-            shift={shiftByClient.get(client._id)}
-          />
-        ))}
+        <AnimatedList>
+          {(clients ?? []).map((client, i) => (
+            <ClientCard
+              key={client._id}
+              client={client}
+              log={logByClient.get(client._id)}
+              logDate={date}
+              index={i}
+              shift={shiftByClient.get(client._id)}
+            />
+          ))}
+        </AnimatedList>
       </section>
 
       {clients === undefined && <SkeletonList />}

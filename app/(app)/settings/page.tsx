@@ -15,16 +15,9 @@ import { cn } from "@/lib/cn";
 import { SkeletonList } from "@/components/skeleton";
 import { useRouter } from "next/navigation";
 import { formatTimeLabel, ordinal } from "@/lib/date";
+import { HIDEABLE_TABS } from "@/lib/tabs";
 
 type Client = Doc<"clients">;
-
-const TAB_OPTIONS: { href: string; label: string }[] = [
-  { href: "/today", label: "Today" },
-  { href: "/income", label: "Income" },
-  { href: "/bills", label: "Bills" },
-  { href: "/spending", label: "Spending" },
-  { href: "/balances", label: "Balances" },
-];
 
 export default function SettingsPage() {
   const clients = useQuery(api.clients.listMine);
@@ -58,7 +51,7 @@ export default function SettingsPage() {
       next.delete(href);
     } else {
       const willHideCount = next.size + 1;
-      if (willHideCount >= TAB_OPTIONS.length) return;
+      if (willHideCount >= HIDEABLE_TABS.length) return;
       next.add(href);
     }
     await setHiddenTabs({ hiddenTabs: [...next] });
@@ -123,9 +116,9 @@ export default function SettingsPage() {
           Hide trackers you don&rsquo;t use. Settings is always visible.
         </p>
         <ul className="space-y-1">
-          {TAB_OPTIONS.map((t) => {
+          {HIDEABLE_TABS.map((t) => {
             const isVisible = !hidden.has(t.href);
-            const isOnlyVisible = isVisible && hidden.size === TAB_OPTIONS.length - 1;
+            const isOnlyVisible = isVisible && hidden.size === HIDEABLE_TABS.length - 1;
             return (
               <li key={t.href}>
                 <button

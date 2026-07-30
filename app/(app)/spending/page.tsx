@@ -6,20 +6,18 @@ import { Doc, Id } from "@/convex/_generated/dataModel";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { cn } from "@/lib/cn";
 import { IconPlus, IconArrow, IconSettings } from "@/components/icons";
-import { todayLocal, formatShort, formatMonth } from "@/lib/date";
+import { todayLocal, formatShort, formatMonth, monthOf } from "@/lib/date";
 import { peso, pesoZero } from "@/lib/currency";
 import { SkeletonList } from "@/components/skeleton";
 import { Button } from "@/components/ui/button";
 import { SpendDonut, type DonutSlice } from "@/components/spend-donut";
+import AnimatedList from "@/components/motion/animated-list";
+import { AnimatedNumber } from "@/components/motion/animated-number";
 import { SpendDrawer, type SpendEditorState } from "./SpendDrawer";
 import { ManageCategoriesDrawer } from "./ManageCategoriesDrawer";
 
 const INCOME_COLOR = "var(--success)";
 const BILLS_COLOR = "var(--accent)";
-
-function monthOf(iso: string): string {
-  return iso.slice(0, 7);
-}
 
 function shiftMonth(monthIso: string, delta: number): string {
   const [y, m] = monthIso.split("-").map(Number);
@@ -204,26 +202,26 @@ export default function SpendingPage() {
 
           <section className="fade-in fade-in-1 mb-8 bg-card rounded-xl p-5">
             <p className="text-xs text-muted-foreground mb-1">Saved this month</p>
-            <p
+            <AnimatedNumber
+              value={summary.saved}
+              format={(n) => pesoZero(Math.round(n))}
               className={cn(
-                "text-3xl font-semibold tabular-nums mb-4",
+                "block text-3xl font-semibold tabular-nums mb-4",
                 summary.saved >= 0 ? "text-success" : "text-destructive",
               )}
-            >
-              {pesoZero(summary.saved)}
-            </p>
+            />
             <ul className="space-y-1 text-sm tabular-nums">
               <li className="flex items-center justify-between">
                 <span className="text-muted-foreground">+ Income</span>
-                <span>{pesoZero(summary.income)}</span>
+                <AnimatedNumber value={summary.income} format={(n) => pesoZero(Math.round(n))} />
               </li>
               <li className="flex items-center justify-between">
                 <span className="text-muted-foreground">− Bills</span>
-                <span>{pesoZero(summary.billsPaid)}</span>
+                <AnimatedNumber value={summary.billsPaid} format={(n) => pesoZero(Math.round(n))} />
               </li>
               <li className="flex items-center justify-between">
                 <span className="text-muted-foreground">− Spending</span>
-                <span>{pesoZero(summary.spending)}</span>
+                <AnimatedNumber value={summary.spending} format={(n) => pesoZero(Math.round(n))} />
               </li>
             </ul>
           </section>
@@ -242,12 +240,13 @@ export default function SpendingPage() {
                       {formatShort(date)}
                     </h3>
                     <ul className="bg-card rounded-xl divide-y divide-border/30">
-                      {rows.map((e) => (
-                        <li key={e._id}>
+                      <AnimatedList as="li">
+                        {rows.map((e) => (
                           <button
+                            key={e._id}
                             type="button"
                             onClick={() => setEditor({ mode: "edit", entry: e })}
-                            className="w-full flex items-center gap-3 px-4 py-3 text-left hover:opacity-80 transition-opacity"
+                            className="tap w-full flex items-center gap-3 px-4 py-3 text-left hover:opacity-80 transition-opacity"
                           >
                             <span
                               className="size-2.5 rounded-full shrink-0"
@@ -271,8 +270,8 @@ export default function SpendingPage() {
                             </span>
                             <span className="text-sm tabular-nums">{peso(e.amount)}</span>
                           </button>
-                        </li>
-                      ))}
+                        ))}
+                      </AnimatedList>
                     </ul>
                   </div>
                 ))}

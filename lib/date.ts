@@ -39,6 +39,12 @@ export function addDaysIso(iso: string, days: number): string {
   return `${y}-${m}-${dd}`;
 }
 
+// "2026-07-30" -> "2026-07". Query args are cache keys in Convex, so every
+// caller must derive the month the same way or warm subscriptions miss.
+export function monthOf(iso: string): string {
+  return iso.slice(0, 7);
+}
+
 export function startOfMonthIso(iso: string): string {
   const d = parseLocal(iso);
   d.setDate(1);
